@@ -23,13 +23,7 @@ class Vehicle:
         self.boosted = 0
 
         self.model_matrix = ModelMatrix()
-        self.body = Cube()
-        self.head = Cube()
-        self.front_wheel_left = Wheel()
-        self.front_wheel_right = Wheel()
-        self.rear_wheel_left = Wheel()
-        self.rear_wheel_right = Wheel()
-        #self.head = Sphere(10, 10)
+        self.car_body = RaceCar()
 
     def update(self, delta_time, steering_input):
         # Update speed and steering based on user input or AI
@@ -96,35 +90,4 @@ class Vehicle:
         self.boosted = duration
 
     def draw(self, shader):
-        # Base transform for the vehicle
-        self.model_matrix.load_identity()
-        self.model_matrix.add_translation(self.position.x, self.position.y, self.position.z)
-        self.model_matrix.add_rotation_y(atan2(self.direction.x, self.direction.z))
-
-        # Draw body
-        body_matrix = self.model_matrix.copy_matrix()
-        temp_matrix = ModelMatrix()
-        temp_matrix.matrix = body_matrix
-        temp_matrix.add_scale(0.6, 0.3, 1.0)
-        shader.set_solid_color(self.color[0], self.color[1], self.color[2])
-        shader.set_model_matrix(temp_matrix.matrix)
-        self.body.draw(shader)
-
-        # Helper for wheels and head
-        def draw_part(offset, scale, color, part):
-            temp_matrix = ModelMatrix()
-            temp_matrix.matrix = body_matrix.copy()
-            temp_matrix.add_translation(*offset)
-            temp_matrix.add_scale(*scale)
-            shader.set_solid_color(*color)
-            shader.set_model_matrix(temp_matrix.matrix)
-            part.draw(shader)
-
-        # Draw wheels
-        draw_part((-0.5, -0.2, 0.5), (0.2, 0.2, 0.2), (0.1, 0.1, 0.1), self.front_wheel_left)
-        draw_part((0.3, -0.2, 0.5), (0.2, 0.2, 0.2), (0.1, 0.1, 0.1), self.front_wheel_right)
-        draw_part((-0.5, -0.2, -0.5), (0.2, 0.2, 0.2), (0.1, 0.1, 0.1), self.rear_wheel_left)
-        draw_part((0.3, -0.2, -0.5), (0.2, 0.2, 0.2), (0.1, 0.1, 0.1), self.rear_wheel_right)
-
-        # Draw head
-        draw_part((0.0, 0.3, 0.0), (0.2, 0.2, 0.2), (1.0, 1.0, 1.0), self.head)
+        self.car_body.draw(shader, self.model_matrix, self.position, atan2(self.direction.x, self.direction.z))
