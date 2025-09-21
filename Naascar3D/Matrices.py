@@ -1,17 +1,6 @@
 
 from math import * # trigonometry
-
 from Base3DObjects import *
-
-def multiply_matrices(m1, m2):
-    counter = 0
-    new_matrix = [0] * 16
-    for row in range(4):
-        for col in range(4):
-            for i in range(4):
-                new_matrix[counter] += m1[row*4 + i]*m2[col + 4*i]
-            counter += 1
-    return new_matrix
 
 class ModelMatrix:
     def __init__(self):
@@ -36,7 +25,14 @@ class ModelMatrix:
         return new_matrix
 
     def add_transformation(self, matrix2):
-        self.matrix = multiply_matrices(self.matrix, matrix2)
+        counter = 0
+        new_matrix = [0] * 16
+        for row in range(4):
+            for col in range(4):
+                for i in range(4):
+                    new_matrix[counter] += self.matrix[row*4 + i]*matrix2[col + 4*i]
+                counter += 1
+        self.matrix = new_matrix
 
     def add_nothing(self):
         other_matrix = [1, 0, 0, 0,
@@ -106,88 +102,6 @@ class ModelMatrix:
             ret_str += "]\n"
         return ret_str
 
-
-
-# The ViewMatrix class holds the camera's coordinate frame and
-# set's up a transformation concerning the camera's position
-# and orientation
-
-class ViewMatrix:
-    def __init__(self, shader, projection_matrix, camera_distance = 10.0, camera_height = 5.0):
-        self.eye = Point(0, 0, 0)
-        self.u = Vector(1, 0, 0)
-        self.v = Vector(0, 1, 0)
-        self.n = Vector(0, 0, 1)
-
-        self.shader = shader
-        self.projection_matrix = projection_matrix
-        self.camera_distance = camera_distance
-        self.camera_height = camera_height
-
-    ## MAKE OPERATIONS TO ADD LOOK, SLIDE, PITCH, YAW and ROLL ##
-    def look_at(self, eye, center, up):
-        self.eye = eye
-        self.n = (eye - center)
-        self.n.normalize()
-        self.u = up.cross(self.n)
-        self.u.normalize()
-        self.v = self.n.cross(self.u)
-        self.v.normalize()
-    
-    def slide(self, du, dv, dn):
-        self.eye = self.eye + self.u * du + self.v * dv + self.n * dn
-    
-    def pitch(self, angle):
-        c = cos(angle)
-        s = sin(angle)
-        new_v = self.v * c + self.n * s
-        new_n = self.n * c - self.v * s
-        self.v = new_v
-        self.n = new_n
-    
-    def yaw(self, angle):
-        c = cos(angle)
-        s = sin(angle)
-        new_u = self.u * c - self.n * s
-        new_n = self.n * c + self.u * s
-        self.u = new_u
-        self.n = new_n
-    
-    def roll(self, angle):
-        c = cos(angle)
-        s = sin(angle)
-        new_u = self.u * c + self.v * s
-        new_v = self.v * c - self.u * s
-        self.u = new_u
-        self.v = new_v
-
-    def get_matrix(self):
-        minusEye = Vector(-self.eye.x, -self.eye.y, -self.eye.z)
-        return [self.u.x, self.u.y, self.u.z, minusEye.dot(self.u),
-                self.v.x, self.v.y, self.v.z, minusEye.dot(self.v),
-                self.n.x, self.n.y, self.n.z, minusEye.dot(self.n),
-                0,        0,        0,        1]
-    
-    def update_camera(self, car_position, car_direction):
-        # Position the camera behind and above the vehicle
-
-        cam_position = Point(
-            car_position.x - car_direction.x * self.camera_distance,
-            car_position.y + self.camera_height,
-            car_position.z - car_direction.z * self.camera_distance
-        )
-        look_at_position = Point(
-            car_position.x + car_direction.x,
-            car_position.y,
-            car_position.z + car_direction.z
-        )
-        up_vector = Vector(0, 1, 0)
-
-        self.look_at(cam_position, look_at_position, up_vector)
-        self.shader.set_projection_view_matrix(
-            multiply_matrices(self.projection_matrix.get_matrix(), self.get_matrix()))
-    
-
 # The ProjectionMatrix class builds transformations concerning
 # the camera's "lens"
 
@@ -244,76 +158,4 @@ class ProjectionMatrix:
                 0, 0, (self.far + self.near) * nf, 2.0 * self.far * self.near * nf,
                 0, 0, -1, 0
             ]
-
-class ProjectionViewMatrix:
-    def __init__(self):
-        #self.matrix = [ 0.45052942369783683,  0.0,  -0.15017647456594563,  0.0,
-        #        -0.10435451285616304,  0.5217725642808152,  -0.3130635385684891,  0.0,
-        #        -0.2953940042189954,  -0.5907880084379908,  -0.8861820126569863,  3.082884480118567,
-        #        -0.2672612419124244,  -0.5345224838248488,  -0.8017837257372732,  3.7416573867739413 ]
-        self.matrix = [
-            1.2990381056766582,  0.0,                     0.0,                     0.0,
-            0.0,                 0.0,                    -1.7320508075688772,     0.0,
-            0.0,                -1.0004000800160032,     0.0,                    79.83196639327866,
-            0.0,                -1.0,                    0.0,                    80.0
-        ]
-
-    def get_matrix(self):
-        return self.matrix
-    
-    
-# class ProjectionViewMatrix:
-#     def __init__(self):
-#         pass
-
-#     def get_matrix(self):
-#         return [ 0.45052942369783683,  0.0,  -0.15017647456594563,  0.0,
-#                 -0.10435451285616304,  0.5217725642808152,  -0.3130635385684891,  0.0,
-#                 -0.2953940042189954,  -0.5907880084379908,  -0.8861820126569863,  3.082884480118567,
-#                 -0.2672612419124244,  -0.5345224838248488,  -0.8017837257372732,  3.7416573867739413 ]
-
-# IDEAS FOR OPERATIONS AND TESTING:
-# if __name__ == "__main__":
-#     matrix = ModelMatrix()
-#     matrix.push_matrix()
-#     print(matrix)
-#     matrix.add_translation(3, 1, 2)
-#     matrix.push_matrix()
-#     print(matrix)
-#     matrix.add_scale(2, 3, 4)
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-    
-#     matrix.add_translation(5, 5, 5)
-#     matrix.push_matrix()
-#     print(matrix)
-#     matrix.add_scale(3, 2, 3)
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-    
-#     matrix.pop_matrix()
-#     print(matrix)
-        
-#     matrix.push_matrix()
-#     matrix.add_scale(2, 2, 2)
-#     print(matrix)
-#     matrix.push_matrix()
-#     matrix.add_translation(3, 3, 3)
-#     print(matrix)
-#     matrix.push_matrix()
-#     matrix.add_rotation_y(pi / 3)
-#     print(matrix)
-#     matrix.push_matrix()
-#     matrix.add_translation(1, 1, 1)
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
     

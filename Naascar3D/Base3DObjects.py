@@ -77,6 +77,12 @@ class Vector:
     def cross(self, other):
         return Vector(self.y*other.z - self.z*other.y, self.z*other.x - self.x*other.z, self.x*other.y - self.y*other.x)
 
+
+
+# ----------------------------------------------------------------------------------------------------
+# ---------------------------------------RaceCar Objects----------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+
 class Cube:
     def __init__(self):
         self.position_array = [
@@ -257,6 +263,132 @@ class Wheel:
         shader.set_position_attribute(self.position_array)
         shader.set_normal_attribute(self.normal_array)
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+# ...existing code...
+
+class RaceCar:
+    def __init__(self, scale=1.0,
+                 body_color=(0.9, 0.1, 0.1),
+                 cabin_color=(0.2, 0.2, 0.25),
+                 wheel_color=(0.1, 0.1, 0.1)):
+        self.scale = scale
+
+        # Wheel / track geometry
+        self.wheel_radius = 0.35 * scale
+        self.wheel_width  = 0.30 * scale
+        self.track = 1.2 * scale                  # distance between wheel centers (x)
+
+        # F1 style segmented layout (approx total length ≈ 3.0 * scale like old car)
+        self.front_axle_l = 0.50 * scale
+        self.body_mid_l   = 1.90 * scale
+        self.rear_axle_l  = 0.60 * scale
+        self.total_l = self.front_axle_l + self.body_mid_l + self.rear_axle_l
+
+        # Widths / heights
+        self.axle_w   = self.track + 0.40 * scale   # axles a bit wider (front wing feel)
+        self.axle_h   = 0.20 * scale
+        self.body_w   = 1.00 * scale
+        self.body_h   = 0.30 * scale
+        self.cockpit_w = 0.90 * scale
+        self.cockpit_h = 0.45 * scale
+        self.cockpit_l = 0.80 * scale
+
+        # Axle (wheel) center positions along z
+        self.front_axle_z =  self.total_l * 0.5 - self.front_axle_l * 0.5
+        self.rear_axle_z  = -self.total_l * 0.5 + self.rear_axle_l * 0.5
+        # Mid body center between axles
+        self.body_mid_z = (self.front_axle_z + self.rear_axle_z) * 0.5
+        # Cockpit slightly rear-biased in the mid body
+        self.cockpit_z = self.body_mid_z - 0.20 * scale
+
+        # Wheel base derived from axle centers
+        self.wheel_base = self.front_axle_z - self.rear_axle_z
+
+        # Vertical placement (origin on ground y=0)
+        # Axles sit above wheels: bottom of axle ~ at wheel top plane? keep simple
+        self.axle_center_y = self.wheel_radius + self.axle_h * 0.5
+        # Body rests on top of axles
+        self.body_center_y = self.axle_center_y + self.axle_h * 0.5 + self.body_h * 0.5
+        # Cockpit above body
+        self.cockpit_center_y = self.body_center_y + self.body_h * 0.5 + self.cockpit_h * 0.5
+
+        # Colors
+        self.body_color = body_color      # used for axles + main body
+        self.cabin_color = cabin_color    # used for cockpit
+        self.wheel_color = wheel_color
+
+        # Parts
+        self.front_axle = Cube()
+        self.mid_body   = Cube()
+        self.rear_axle  = Cube()
+        self.cockpit    = Cube()
+        self.wheel      = Wheel(radius=self.wheel_radius, width=self.wheel_width, segments=16)
+
+    def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
+        def draw_part(obj, color, tx, ty, tz, sx=1.0, sy=1.0, sz=1.0, rotate_y=None):
+            model_matrix.load_identity()
+            model_matrix.add_translation(position.x, position.y, position.z)
+            model_matrix.add_rotation_y(yaw)
+            model_matrix.add_translation(tx, ty, tz)
+            if rotate_y is not None:
+                model_matrix.add_rotation_y(rotate_y)
+            model_matrix.add_scale(sx, sy, sz)
+            shader.set_model_matrix(model_matrix.matrix)
+            shader.set_solid_color(*color)
+            obj.draw(shader)
+
+        # Front axle cube
+        draw_part(
+            self.front_axle, self.body_color,
+            0.0, self.axle_center_y, self.front_axle_z,
+            self.axle_w, self.axle_h, self.front_axle_l
+        )
+
+        # Rear axle cube
+        draw_part(
+            self.rear_axle, self.body_color,
+            0.0, self.axle_center_y, self.rear_axle_z,
+            self.axle_w * 0.9, self.axle_h * 1.1, self.rear_axle_l
+        )
+
+        # Central body
+        draw_part(
+            self.mid_body, self.body_color,
+            0.0, self.body_center_y, self.body_mid_z,
+            self.body_w, self.body_h, self.body_mid_l
+        )
+
+        # Cockpit
+        draw_part(
+            self.cockpit, self.cabin_color,
+            0.0, self.cockpit_center_y, self.cockpit_z,
+            self.cockpit_w, self.cockpit_h, self.cockpit_l
+        )
+
+        # Wheels (geometry spans x=[0..wheel_width], so shift so center aligns)
+        wx_left_center  = -self.track * 0.5
+        wx_right_center =  self.track * 0.5
+        wx_left  = wx_left_center  - self.wheel_width * 0.5
+        wx_right = wx_right_center - self.wheel_width * 0.5
+        wy_center = self.wheel_radius
+        wz_front  = self.front_axle_z
+        wz_back   = self.rear_axle_z
+
+        # Front-left
+        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_front)
+        # Front-right
+        draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_front)
+        # Rear-left
+        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_back)
+        # Rear-right
+        draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_back)
+
+# ...existing code...
+
+
+
+# ----------------------------------------------------------------------------------------------------
+# --------------------------------------RaceTrack Objects---------------------------------------------
+# ----------------------------------------------------------------------------------------------------
 
 class VerticalWall:
     def __init__(self, width = 1.0, height = 1.0, color=(0.5,0.5,0.5)):
@@ -315,91 +447,6 @@ class HorizontalWall:
         shader.set_normal_attribute(self.normal_array)
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
-
-
-class RaceCar:
-    def __init__(self, scale=1.0, body_color=(0.9, 0.1, 0.1), cabin_color=(0.2, 0.2, 0.25), wheel_color=(0.1, 0.1, 0.1)):
-        # Dimensions (in car-local space)
-        self.scale = scale
-        self.body_w = 1.6 * scale
-        self.body_h = 0.4 * scale
-        self.body_l = 3.0 * scale
-
-        self.cabin_w = 1.2 * scale
-        self.cabin_h = 0.5 * scale
-        self.cabin_l = 1.2 * scale
-
-        self.wheel_radius = 0.35 * scale
-        self.wheel_width  = 0.30 * scale
-        self.track = 1.2 * scale           # distance between wheel centers (x)
-        self.wheel_base = 1.6 * scale      # distance between front/back wheel centers (z)
-
-        # Colors
-        self.body_color = body_color
-        self.cabin_color = cabin_color
-        self.wheel_color = wheel_color
-
-        # Parts (reused across draws)
-        self.chassis = Cube()
-        self.cabin = Cube()
-        self.wheel = Wheel(radius=self.wheel_radius, width=self.wheel_width, segments=16)
-
-    def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
-        # Helper to set matrix and draw a part
-        def draw_part(obj, color, tx, ty, tz, sx=1.0, sy=1.0, sz=1.0, rotate_y=None):
-            model_matrix.load_identity()
-            model_matrix.add_translation(position.x, position.y, position.z)
-            model_matrix.add_rotation_y(yaw)
-            model_matrix.add_translation(tx, ty, tz)
-            if rotate_y is not None:
-                model_matrix.add_rotation_y(rotate_y)
-            model_matrix.add_scale(sx, sy, sz)
-            shader.set_model_matrix(model_matrix.matrix)
-            shader.set_solid_color(*color)
-            obj.draw(shader)
-
-        # Ground reference: car origin is at ground plane (y=0), centered in z
-        # Raise chassis so bottom sits above wheels
-        chassis_y = self.wheel_radius + self.body_h * 0.5
-        draw_part(
-            self.chassis, self.body_color,
-            0.0, chassis_y, 0.0,
-            self.body_w, self.body_h, self.body_l
-        )
-
-        # Cabin, slightly rear-biased
-        cabin_y = chassis_y + self.body_h * 0.5 + self.cabin_h * 0.5
-        cabin_z = -self.body_l * 0.15
-        draw_part(
-            self.cabin, self.cabin_color,
-            0.0, cabin_y, cabin_z,
-            self.cabin_w, self.cabin_h, self.cabin_l
-        )
-
-        # Wheels: Wheel geometry runs from x=[0..width], center at x=width/2.
-        # Place by translating so that center lands on target_x.
-        wx_left_center  = -self.track * 0.5
-        wx_right_center =  self.track * 0.5
-        wx_left   = wx_left_center  - self.wheel_width * 0.5
-        wx_right  = wx_right_center - self.wheel_width * 0.5
-        wy_center = self.wheel_radius
-        wz_front  =  self.wheel_base * 0.5
-        wz_back   = -self.wheel_base * 0.5
-
-        # Front-left
-        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_front)
-        # Front-right
-        draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_front)
-        # Rear-left
-        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_back)
-        # Rear-right
-        draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_back)
-
-
-
-# ----------------------------------------------------------------------------------------------------
-# --------------------------------------RaceTrack Objects---------------------------------------------
-# ----------------------------------------------------------------------------------------------------
 
 class FloorTile:
     def __init__(self, size = 1.0, color=(0.0,0.5,0.0)):

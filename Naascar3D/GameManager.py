@@ -1,23 +1,21 @@
 
-from OpenGL import GL, GLU, error
+from OpenGL import GL
 from math import *
 
 import pygame
 from pygame.locals import *
 
-import sys
-import time
-
 from Shaders import *
+from Camera import *
 from Physics3D import *
 from Matrices import *
 from Vehicle import *
 from Track import *
 
 class GameManager:
-    CAMERA_DISTANCE = 8.0
-    CAMERA_HEIGHT = 2.5
-    TRACK_NUMBER = 2
+    CAMERA_DISTANCE = 16.0
+    CAMERA_HEIGHT = 5
+    TRACK_NUMBER = 0
 
     GRID_SIZE = 8
     SQUARE_SIZE = 32.0
@@ -45,8 +43,8 @@ class GameManager:
 
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), settings["aspect_x"]/settings["aspect_y"], 0.1, 1000.0)
-        self.view_matrix = ViewMatrix(self.shader, self.projection_matrix, self.CAMERA_DISTANCE, self.CAMERA_HEIGHT)
-        self.view_matrix.update_camera(self.vehicle.position, self.vehicle.direction)
+        self.camera = Camera(self.shader, self.projection_matrix, self.CAMERA_DISTANCE, self.CAMERA_HEIGHT)
+        self.camera.update_pos(self.vehicle.position, self.vehicle.direction)
 
         self.clock = pygame.time.Clock()
         self.clock.tick()
@@ -77,7 +75,7 @@ class GameManager:
 
         self.track.draw()
         self.vehicle.draw(self.shader)
-        self.view_matrix.update_camera(self.vehicle.position, self.vehicle.direction)
+        self.camera.update_pos(self.vehicle.position, self.vehicle.direction)
 
         pygame.display.flip()
     
