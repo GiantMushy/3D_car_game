@@ -9,6 +9,7 @@ import sys
 import time
 
 from Shaders import *
+from Physics3D import *
 from Matrices import *
 from Vehicle import *
 from Track import *
@@ -16,7 +17,7 @@ from Track import *
 class GameManager:
     CAMERA_DISTANCE = 8.0
     CAMERA_HEIGHT = 2.5
-    TRACK_NUMBER = 0
+    TRACK_NUMBER = 2
 
     GRID_SIZE = 8
     SQUARE_SIZE = 32.0
@@ -27,23 +28,25 @@ class GameManager:
 
         pygame.init() 
         pygame.display.set_mode((settings["aspect_x"], settings["aspect_y"]), pygame.OPENGL|pygame.DOUBLEBUF)
-
         self.shader = Shader3D()
         self.shader.use()
 
-        self.model_matrix = ModelMatrix()
-        self.track = Track({"track": self.TRACK_NUMBER, "grid_size": self.GRID_SIZE, "tile_size": self.SQUARE_SIZE, "road_width": self.ROAD_WIDTH, "sideline_width": self.SIDELINE_WIDTH})
+        self.track = Track(self.shader, {"track": self.TRACK_NUMBER, "grid_size": self.GRID_SIZE, "tile_size": self.SQUARE_SIZE, "road_width": self.ROAD_WIDTH, "sideline_width": self.SIDELINE_WIDTH})
         start_x = self.track.track["start"][0] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
         start_y = self.track.track["start"][1] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
-        start_orientation = self.track.track["direction"]
 
-        self.vehicle = Vehicle( {"position": Point(start_x, 0.5, start_y), "direction": start_orientation, "speed": 0, "steering": 0, "color": (1.0, 0.0, 0.0, 1.0)})
+        self.vehicle = Vehicle( {"position": Point(start_x, 0.5, start_y), 
+                                 "direction": self.track.track["direction"], 
+                                 "hitbox_size": 2.0,
+                                 "speed": 0, "steering": 0, 
+                                 "color": (1.0, 0.0, 0.0)})
+        
+        self.physics = Physics3D(self.track, self.vehicle)
 
-        self.view_matrix = ViewMatrix()
         self.projection_matrix = ProjectionMatrix()
-
         self.projection_matrix.set_perspective(radians(60.0), settings["aspect_x"]/settings["aspect_y"], 0.1, 1000.0)
-        self.update_camera()
+        self.view_matrix = ViewMatrix(self.shader, self.projection_matrix, self.CAMERA_DISTANCE, self.CAMERA_HEIGHT)
+        self.view_matrix.update_camera(self.vehicle.position, self.vehicle.direction)
 
         self.clock = pygame.time.Clock()
         self.clock.tick()
@@ -58,11 +61,13 @@ class GameManager:
     def update(self):
         delta_time = self.clock.tick() / 1000.0
         self.vehicle.update(delta_time, (self.LEFT_key_down, self.RIGHT_key_down, self.UP_key_down, self.DOWN_key_down))
+        self.physics.enforce_track_bounds()
     
         self.frame_count += 1
         self.frame_count = self.frame_count % 200
         if self.frame_count == 0:
-            self.debug_prints()
+            #self.debug_prints()
+            pass
 
     def display(self):
         GL.glEnable(GL.GL_DEPTH_TEST)  ### --- NEED THIS FOR NORMAL 3D BUT MANY EFFECTS BETTER WITH glDisable(GL_DEPTH_TEST) ... try it! --- ###
@@ -72,32 +77,10 @@ class GameManager:
 
         self.track.draw()
         self.vehicle.draw(self.shader)
-        self.update_camera()
+        self.view_matrix.update_camera(self.vehicle.position, self.vehicle.direction)
 
         pygame.display.flip()
     
-    def update_camera(self):
-        # Position the camera behind and above the vehicle
-        self.vehicle.direction.normalize()
-
-        cam_position = Point(
-            self.vehicle.position.x - self.vehicle.direction.x * self.CAMERA_DISTANCE,
-            self.vehicle.position.y + self.CAMERA_HEIGHT,
-            self.vehicle.position.z - self.vehicle.direction.z * self.CAMERA_DISTANCE
-        )
-        look_at_position = Point(
-            self.vehicle.position.x + self.vehicle.direction.x,
-            self.vehicle.position.y,
-            self.vehicle.position.z + self.vehicle.direction.z
-        )
-        up_vector = Vector(0, 1, 0)
-
-        self.view_matrix.look_at(cam_position, look_at_position, up_vector)
-        self.shader.set_projection_view_matrix(
-            multiply_matrices(self.projection_matrix.get_matrix(), 
-                              self.view_matrix.get_matrix()))
-
-        
     def program_loop(self):
         exiting = False
         while not exiting:

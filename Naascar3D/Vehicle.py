@@ -10,13 +10,14 @@ class Vehicle:
     TURN_SPEED = 2.0
     ACCELERATION = 10.0
 
-    def __init__(self, settings = {"position": Point(0,0,0), "direction": Vector(1,0,0), "speed": 0, "steering": 0, "color": (1.0, 0.0, 0.0, 1.0)}):
+    def __init__(self, settings = {"position": Point(0,0,0), "direction": Vector(1,0,0), "hitbox_size": 1.0, "speed": 0, "steering": 0, "color": (1.0, 0.0, 0.0, 1.0)}):
         self.position = settings["position"]
         self.direction = settings["direction"]
         self.speed = settings["speed"]
         self.steering = settings["steering"]
         self.color = settings["color"]
-        self.acceleration = self.ACCELERATION
+        self.hitbox_size = settings["hitbox_size"]
+        self.acceleration = self.ACCELERATION # default acceleration -- can be modified by power-ups
         
         self.disabled = 0
         self.slowed = 0
@@ -49,7 +50,8 @@ class Vehicle:
         else:
             self.auto_decelerate(delta_time)
             self.disabled -= delta_time
-        
+
+        self.direction.normalize()
         self.move(delta_time)
     
     def move(self, delta_time):

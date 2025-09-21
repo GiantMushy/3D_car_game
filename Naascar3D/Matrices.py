@@ -113,11 +113,16 @@ class ModelMatrix:
 # and orientation
 
 class ViewMatrix:
-    def __init__(self):
+    def __init__(self, shader, projection_matrix, camera_distance = 10.0, camera_height = 5.0):
         self.eye = Point(0, 0, 0)
         self.u = Vector(1, 0, 0)
         self.v = Vector(0, 1, 0)
         self.n = Vector(0, 0, 1)
+
+        self.shader = shader
+        self.projection_matrix = projection_matrix
+        self.camera_distance = camera_distance
+        self.camera_height = camera_height
 
     ## MAKE OPERATIONS TO ADD LOOK, SLIDE, PITCH, YAW and ROLL ##
     def look_at(self, eye, center, up):
@@ -162,7 +167,26 @@ class ViewMatrix:
                 self.v.x, self.v.y, self.v.z, minusEye.dot(self.v),
                 self.n.x, self.n.y, self.n.z, minusEye.dot(self.n),
                 0,        0,        0,        1]
+    
+    def update_camera(self, car_position, car_direction):
+        # Position the camera behind and above the vehicle
 
+        cam_position = Point(
+            car_position.x - car_direction.x * self.camera_distance,
+            car_position.y + self.camera_height,
+            car_position.z - car_direction.z * self.camera_distance
+        )
+        look_at_position = Point(
+            car_position.x + car_direction.x,
+            car_position.y,
+            car_position.z + car_direction.z
+        )
+        up_vector = Vector(0, 1, 0)
+
+        self.look_at(cam_position, look_at_position, up_vector)
+        self.shader.set_projection_view_matrix(
+            multiply_matrices(self.projection_matrix.get_matrix(), self.get_matrix()))
+    
 
 # The ProjectionMatrix class builds transformations concerning
 # the camera's "lens"

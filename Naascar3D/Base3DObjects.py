@@ -155,34 +155,6 @@ class Cube:
         GL.glDrawArrays(GL.GL_TRIANGLE_FAN, 20, 4)
 
 
-class Rectangle:
-    def __init__(self, width = 1.0, height = 1.0):
-        w = width / 2
-        h = height / 2
-        self.position_array = [
-            -w, -h, 0.0,
-             w, -h, 0.0,
-             w,  h, 0.0,
-            -w,  h, 0.0
-            ]
-        self.normal_array = [
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 1.0
-        ]
-        self.index_array = [
-            0, 1, 2,
-            2, 3, 0
-        ]
-
-    def draw(self, shader):
-        shader.set_position_attribute(self.position_array)
-        shader.set_normal_attribute(self.normal_array)
-
-        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
-
-
 class Sphere:
     def __init__(self, latitude_bands = 10, longitude_bands = 10):
         self.position_array = []
@@ -222,55 +194,6 @@ class Sphere:
                 self.index_array.append(second + 1)
                 self.index_array.append(first + 1)
     
-    def draw(self, shader):
-        shader.set_position_attribute(self.position_array)
-        shader.set_normal_attribute(self.normal_array)
-
-        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
-
-
-class Cylinder:
-    def __init__(self, radius = 0.5, height = 1.0, segments = 30):
-        self.position_array = []
-        self.normal_array = []
-
-        for i in range(segments + 1):
-            angle = i * 2 * pi / segments
-            x = radius * cos(angle)
-            z = radius * sin(angle)
-
-            # Bottom circle
-            self.position_array.append(x)
-            self.position_array.append(-height / 2)
-            self.position_array.append(z)
-            self.normal_array.append(x)
-            self.normal_array.append(0.0)
-            self.normal_array.append(z)
-
-            # Top circle
-            self.position_array.append(x)
-            self.position_array.append(height / 2)
-            self.position_array.append(z)
-            self.normal_array.append(x)
-            self.normal_array.append(0.0)
-            self.normal_array.append(z)
-
-        self.index_array = []
-        for i in range(segments):
-            bottom1 = i * 2
-            top1 = bottom1 + 1
-            bottom2 = (i + 1) * 2
-            top2 = bottom2 + 1
-
-            # Side triangles
-            self.index_array.append(bottom1)
-            self.index_array.append(top1)
-            self.index_array.append(bottom2)
-
-            self.index_array.append(top1)
-            self.index_array.append(top2)
-            self.index_array.append(bottom2)
-
     def draw(self, shader):
         shader.set_position_attribute(self.position_array)
         shader.set_normal_attribute(self.normal_array)
@@ -335,16 +258,16 @@ class Wheel:
         shader.set_normal_attribute(self.normal_array)
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
-class HorizontalWall:
+class VerticalWall:
     def __init__(self, width = 1.0, height = 1.0, color=(0.5,0.5,0.5)):
-        w = width / 2
-        h = height / 2
+        w = width
+        h = height
         self.color = color
         self.position_array = [
-            -w, -h, 0.0,
-             w, -h, 0.0,
-             w,  h, 0.0,
-            -w,  h, 0.0
+            0.0, 0.0, 0.0,
+            0.0, h,   0.0,
+            w,   h,   0.0,
+            w,   0.0, 0.0
             ]
         self.normal_array = [
             0.0, 0.0, 1.0,
@@ -364,16 +287,16 @@ class HorizontalWall:
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
-class VerticalWall:
+class HorizontalWall:
     def __init__(self, width = 1.0, height = 1.0, color=(0.1,0.1,0.1)):
-        w = width / 2
-        h = height / 2
+        w = width
+        h = height
         self.color = color
         self.position_array = [
-            0.0, -h, -w,
-            0.0,  h, -w,
-            0.0,  h,  w,
-            0.0, -h,  w
+            0.0, 0.0, 0.0,
+            0.0, h,   0.0,
+            0.0, h,   w,
+            0.0, 0.0, w
             ]
         self.normal_array = [
             -1.0, 0.0, 0.0,
@@ -393,33 +316,6 @@ class VerticalWall:
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
-class FloorTile:
-    def __init__(self, size = 32, color=(0.0,0.5,0.0)):
-        s = size / 2
-        self.color = color
-        self.position_array = [
-            -s, 0.0, -s,
-             s, 0.0, -s,
-             s, 0.0,  s,
-            -s, 0.0,  s
-            ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
-        self.index_array = [
-            0, 1, 2,
-            2, 3, 0
-        ]
-    
-    def draw(self, shader):
-        shader.set_solid_color(*self.color)  # set uniform color
-        shader.set_position_attribute(self.position_array)
-        shader.set_normal_attribute(self.normal_array)
-
-        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class RaceCar:
     def __init__(self, scale=1.0, body_color=(0.9, 0.1, 0.1), cabin_color=(0.2, 0.2, 0.25), wheel_color=(0.1, 0.1, 0.1)):
@@ -498,3 +394,257 @@ class RaceCar:
         draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_back)
         # Rear-right
         draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_back)
+
+
+
+# ----------------------------------------------------------------------------------------------------
+# --------------------------------------RaceTrack Objects---------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+
+class FloorTile:
+    def __init__(self, size = 1.0, color=(0.0,0.5,0.0)):
+        self.color = color
+        self.position_array = [
+            0.0, 0.0, 0.0,
+            size,0.0, 0.0,
+            size,0.0, size,
+            0.0, 0.0, size
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            2, 3, 0
+        ]
+    
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)  # set uniform color
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+class FinishLine:
+    def __init__(self, width = 1.0, height = 0.1, color=(1.0,1.0,1.0)):
+        w = width
+        h = height
+        self.color = color
+        self.position_array = [
+            0.0, 0.0, 0.0,
+            0.0, h,   0.0,
+            w,   h,   0.0,
+            w,   0.0, 0.0
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            2, 3, 0
+        ]
+
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+class HorizontalRoad:
+    def __init__(self, width = 1.0, tile_size = 1.0, banks = 1.0, color=(0.2,0.2,0.2)):
+        w = width
+        s = tile_size
+        b = banks
+        self.color = color
+        self.position_array = [
+            b, 0.0, 0.0,
+            b, 0.0, s,
+            w + b, 0.0, s,
+            w + b, 0.0, 0.0
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            2, 3, 0
+        ]
+
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+class VerticalRoad:
+    def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
+        w = width
+        s = tile_size
+        b = banks
+        self.color = color
+        self.position_array = [
+            0.0, 0.0, b,
+            s,   0.0, b,
+            s,   0.0, w + b,
+            0.0, 0.0, w + b
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            2, 3, 0
+        ]
+
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+class LeftTurnRoad:
+    def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
+        w = width
+        s = tile_size
+        b = banks
+        self.color = color
+        self.position_array = [
+            0.0, 0.0, w+b,
+            0.0, 0.0, b,
+            w,   0.0, w,
+            b,   0.0, 0.0,
+            w+b, 0.0, 0.0
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            1, 2, 3,
+            2, 3, 4
+        ]
+
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+class RightTurnRoad:
+    def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
+        w = width
+        s = tile_size
+        b = banks
+        self.color = color
+        self.position_array = [
+            0.0, 0.0, b,
+            0.0, 0.0, b+w,
+            w,   0.0, w,
+            b,   0.0, s,
+            w+b, 0.0, s
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            1, 2, 3,
+            2, 3, 4
+        ]
+
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+    
+class DownLeftTurnRoad:
+    def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
+        w = width
+        s = tile_size
+        b = banks
+        self.color = color
+        self.position_array = [
+            s,   0.0, w+b,
+            s,   0.0, b,
+            s-w, 0.0, w,
+            s-b, 0.0, 0.0,
+            b,   0.0, 0.0
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            1, 2, 3,
+            2, 3, 4
+        ]
+    
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+class DownRightTurnRoad:
+    def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
+        w = width
+        s = tile_size
+        b = banks
+        self.color = color
+        self.position_array = [
+            s,   0.0, b,
+            s,   0.0, w+b,
+            s-w, 0.0, s-w,
+            s-b, 0.0, s,
+            b,   0.0, s
+            ]
+        self.normal_array = [
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0
+        ]
+        self.index_array = [
+            0, 1, 2,
+            1, 2, 3,
+            2, 3, 4
+        ]
+    
+    def draw(self, shader):
+        shader.set_solid_color(*self.color)
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
