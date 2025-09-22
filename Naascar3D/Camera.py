@@ -7,7 +7,7 @@ from math import *
 
 
 class Camera: # ViewMatrix:
-    def __init__(self, shader, projection_matrix, camera_distance = 10.0, camera_height = 5.0):
+    def __init__(self, shader, projection_matrix, camera_distance = 10.0, camera_height = 5.0, start_direction = Vector(0,0,1)):
         self.eye = Point(0, 0, 0)
         self.u = Vector(1, 0, 0)
         self.v = Vector(0, 1, 0)
@@ -18,7 +18,7 @@ class Camera: # ViewMatrix:
         self.camera_distance = camera_distance
         self.camera_height = camera_height
 
-        self.follow_dir = Vector(0, 0, 1)
+        self.follow_dir = start_direction
         self.camera_smoothness = 0.05
 
     ## MAKE OPERATIONS TO ADD LOOK, SLIDE, PITCH, YAW and ROLL ##

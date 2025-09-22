@@ -268,14 +268,15 @@ class Wheel:
 class RaceCar:
     def __init__(self, scale=1.0,
                  body_color=(0.9, 0.1, 0.1),
-                 cabin_color=(0.2, 0.2, 0.25),
-                 wheel_color=(0.1, 0.1, 0.1)):
+                 cabin_color=(0.30, 0.80, 0.90),
+                 wheel_color=(0.1, 0.1, 0.1),
+                 steering_angle=0.0):
         self.scale = scale
 
         # Wheel / track geometry
-        self.wheel_radius = 0.35 * scale
-        self.wheel_width  = 0.30 * scale
-        self.track = 1.2 * scale                  # distance between wheel centers (x)
+        self.wheel_radius = 0.5 * scale
+        self.wheel_width  = 0.5 * scale
+        self.track = 1.8 * scale                  # distance between wheel centers (x)
 
         # F1 style segmented layout (approx total length ≈ 3.0 * scale like old car)
         self.front_axle_l = 0.50 * scale
@@ -287,10 +288,10 @@ class RaceCar:
         self.axle_w   = self.track + 0.40 * scale   # axles a bit wider (front wing feel)
         self.axle_h   = 0.20 * scale
         self.body_w   = 1.00 * scale
-        self.body_h   = 0.30 * scale
-        self.cockpit_w = 0.90 * scale
-        self.cockpit_h = 0.45 * scale
-        self.cockpit_l = 0.80 * scale
+        self.body_h   = 0.20 * scale
+        self.cockpit_w = 0.8 * scale
+        self.cockpit_h = 0.5 * scale
+        self.cockpit_l = 1.2 * scale
 
         # Axle (wheel) center positions along z
         self.front_axle_z =  self.total_l * 0.5 - self.front_axle_l * 0.5
@@ -309,7 +310,7 @@ class RaceCar:
         # Body rests on top of axles
         self.body_center_y = self.axle_center_y + self.axle_h * 0.5 + self.body_h * 0.5
         # Cockpit above body
-        self.cockpit_center_y = self.body_center_y + self.body_h * 0.5 + self.cockpit_h * 0.5
+        self.cockpit_center_y = self.body_center_y + self.body_h * 0.5 + self.cockpit_h * 0.1
 
         # Colors
         self.body_color = body_color      # used for axles + main body
@@ -320,8 +321,9 @@ class RaceCar:
         self.front_axle = Cube()
         self.mid_body   = Cube()
         self.rear_axle  = Cube()
-        self.cockpit    = Cube()
+        self.cockpit    = Sphere(latitude_bands=8, longitude_bands=8)
         self.wheel      = Wheel(radius=self.wheel_radius, width=self.wheel_width, segments=16)
+        self.steering_angle = steering_angle
 
     def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
         def draw_part(obj, color, tx, ty, tz, sx=1.0, sy=1.0, sz=1.0, rotate_y=None):
@@ -374,15 +376,14 @@ class RaceCar:
         wz_back   = self.rear_axle_z
 
         # Front-left
-        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_front)
+        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_front, rotate_y=self.steering_angle)
         # Front-right
-        draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_front)
+        draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_front, rotate_y=self.steering_angle)
+
         # Rear-left
         draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_back)
         # Rear-right
         draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_back)
-
-# ...existing code...
 
 
 
@@ -475,34 +476,84 @@ class FloorTile:
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
+# ...existing code...
 class FinishLine:
-    def __init__(self, width = 1.0, height = 0.1, color=(1.0,1.0,1.0)):
-        w = width
-        h = height
-        self.color = color
-        self.position_array = [
-            0.0, 0.0, 0.0,
-            0.0, h,   0.0,
-            w,   h,   0.0,
-            w,   0.0, 0.0
-            ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
-        self.index_array = [
-            0, 1, 2,
-            2, 3, 0
-        ]
+    # Centered checkered finish line (alternating black/white)
+    def __init__(self, road_width=1.0, banks=0.0, tile_size=1.0, horizontal=True, color1=(1.0,1.0,1.0), color2=(0.0,0.0,0.0)):
+        w = road_width
+        b = banks
+        self.color1 = color1
+        self.color2 = color2
+        self.horizontal = horizontal
+
+        band_thickness = w / 10.0
+        square_size = w / 20.0
+
+        if band_thickness < 0.001:
+            band_thickness = w * 0.1
+        if square_size < 0.001:
+            square_size = w * 0.1
+
+        band_offset = (tile_size - band_thickness) * 0.5
+
+        self.squares = []  # (positions, normals)
+
+        num_squares = int(w / square_size)
+        if num_squares < 1:
+            num_squares = 1
+            square_size = w
+
+        if horizontal:
+            print("Hello WOrld")
+            z0 = band_offset
+            z1 = band_offset + band_thickness
+            for i in range(num_squares):
+                x0 = b + i * square_size
+                x1 = b + min(w, (i + 1) * square_size)
+                positions = [
+                    x0, 0.0, z0,
+                    x0, 0.0, z1,
+                    x1, 0.0, z1,
+                    x1, 0.0, z0
+                ]
+                normals = [0.0, 1.0, 0.0] * 4
+                self.squares.append((positions, normals))
+        else:
+            print("Goodbye WOrld")
+            x0_n = band_offset
+            x1_n = band_offset + band_thickness
+            for i in range(num_squares):
+                z0 = b + i * square_size
+                z1 = b + min(w, (i + 1) * square_size)
+                positions = [
+                    x0_n, 0.0, z0,
+                    x0_n, 0.0, z1,
+                    x1_n, 0.0, z1,
+                    x1_n, 0.0, z0
+                ]
+                normals = [0.0, 1.0, 0.0] * 4
+                self.squares.append((positions, normals))
+
+        self.indices = [0, 1, 2, 2, 3, 0]
 
     def draw(self, shader):
-        shader.set_solid_color(*self.color)
-        shader.set_position_attribute(self.position_array)
-        shader.set_normal_attribute(self.normal_array)
+        for i, (pos, norms) in enumerate(self.squares):
+            color = self.color1 if (i % 2 == 0) else self.color2
+            shader.set_solid_color(*color)
+            shader.set_position_attribute(pos)
+            shader.set_normal_attribute(norms)
+            GL.glDrawElements(GL.GL_TRIANGLES, len(self.indices), GL.GL_UNSIGNED_INT, self.indices)
 
-        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+    def draw(self, shader):
+        # Draw each square with alternating colors
+        for i, (pos, norms) in enumerate(self.squares):
+            color = self.color1 if (i % 2 == 0) else self.color2
+            shader.set_solid_color(*color)
+            shader.set_position_attribute(pos)
+            shader.set_normal_attribute(norms)
+            GL.glDrawElements(GL.GL_TRIANGLES, len(self.indices), GL.GL_UNSIGNED_INT, self.indices)
+
 
 class HorizontalRoad:
     def __init__(self, width = 1.0, tile_size = 1.0, banks = 1.0, color=(0.2,0.2,0.2)):
@@ -516,12 +567,7 @@ class HorizontalRoad:
             w + b, 0.0, s,
             w + b, 0.0, 0.0
             ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
+        self.normal_array = [0.0, 1.0, 0.0] * 4
         self.index_array = [
             0, 1, 2,
             2, 3, 0
@@ -546,12 +592,7 @@ class VerticalRoad:
             s,   0.0, w + b,
             0.0, 0.0, w + b
             ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
+        self.normal_array = [0.0, 1.0, 0.0] * 4
         self.index_array = [
             0, 1, 2,
             2, 3, 0
@@ -577,13 +618,7 @@ class LeftTurnRoad:
             b,   0.0, 0.0,
             w+b, 0.0, 0.0
             ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
+        self.normal_array = [0.0, 1.0, 0.0] * 5
         self.index_array = [
             0, 1, 2,
             1, 2, 3,
@@ -610,13 +645,7 @@ class RightTurnRoad:
             b,   0.0, s,
             w+b, 0.0, s
             ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
+        self.normal_array = [0.0, 1.0, 0.0] * 5
         self.index_array = [
             0, 1, 2,
             1, 2, 3,
@@ -643,13 +672,7 @@ class DownLeftTurnRoad:
             s-b, 0.0, 0.0,
             b,   0.0, 0.0
             ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
+        self.normal_array = [0.0, 1.0, 0.0] * 5
         self.index_array = [
             0, 1, 2,
             1, 2, 3,
@@ -676,13 +699,7 @@ class DownRightTurnRoad:
             s-b, 0.0, s,
             b,   0.0, s
             ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
+        self.normal_array = [0.0, 1.0, 0.0] * 5
         self.index_array = [
             0, 1, 2,
             1, 2, 3,

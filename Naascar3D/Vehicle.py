@@ -41,6 +41,8 @@ class Vehicle:
                 self.turn_left(self.TURN_SPEED * delta_time)
             elif steering_input[1]: # turn right
                 self.turn_right(self.TURN_SPEED * delta_time)
+            else:
+                self.car_body.steering_angle = 0.0  # Reset steering angle when not turning
             if steering_input[2]: # accelerate
                 self.speed += self.acceleration * delta_time
             elif steering_input[3]: # brake
@@ -67,10 +69,12 @@ class Vehicle:
         # Rotate the direction vector to the left around the Y-axis on proportion of the car's speed
         #self.direction = self.direction.rotate_y(-angle * (self.speed / self.MAX_SPEED))
         self.direction = self.direction.rotate_y(-angle)
+        self.car_body.steering_angle = 0.5  # Set steering angle for visual effect
 
     def turn_right(self, angle):
         #self.direction = self.direction.rotate_y(angle * (self.speed / self.MAX_SPEED))
         self.direction = self.direction.rotate_y(angle)
+        self.car_body.steering_angle = -0.5  # Set steering angle for visual effect
 
     def auto_decelerate(self, delta_time):
         if self.speed > 0:
@@ -91,5 +95,5 @@ class Vehicle:
     def boost(self, duration):
         self.boosted = duration
 
-    def draw(self, shader):
+    def draw(self, shader, turning=None):
         self.car_body.draw(shader, self.model_matrix, self.position, atan2(self.direction.x, self.direction.z))

@@ -6,7 +6,7 @@ import pygame
 from pygame.locals import *
 
 from Shaders import *
-from Camera import *
+from Camera import Camera
 from Physics3D import *
 from Matrices import *
 from Vehicle import *
@@ -15,7 +15,7 @@ from Track import *
 class GameManager:
     CAMERA_DISTANCE = 16.0
     CAMERA_HEIGHT = 5
-    TRACK_NUMBER = 0
+    TRACK_NUMBER = 0 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3
 
     GRID_SIZE = 8
     SQUARE_SIZE = 32.0
@@ -43,7 +43,7 @@ class GameManager:
 
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), settings["aspect_x"]/settings["aspect_y"], 0.1, 1000.0)
-        self.camera = Camera(self.shader, self.projection_matrix, self.CAMERA_DISTANCE, self.CAMERA_HEIGHT)
+        self.camera = Camera(self.shader, self.projection_matrix, self.CAMERA_DISTANCE, self.CAMERA_HEIGHT, self.track.track["direction"])
         self.camera.update_pos(self.vehicle.position, self.vehicle.direction)
 
         self.clock = pygame.time.Clock()
