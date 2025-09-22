@@ -263,7 +263,6 @@ class Wheel:
         shader.set_position_attribute(self.position_array)
         shader.set_normal_attribute(self.normal_array)
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
-# ...existing code...
 
 class RaceCar:
     def __init__(self, scale=1.0,
@@ -276,16 +275,15 @@ class RaceCar:
         # Wheel / track geometry
         self.wheel_radius = 0.5 * scale
         self.wheel_width  = 0.5 * scale
-        self.track = 1.8 * scale                  # distance between wheel centers (x)
+        self.track = 1.8 * scale   # distance between wheel centers (x)
 
-        # F1 style segmented layout (approx total length ≈ 3.0 * scale like old car)
         self.front_axle_l = 0.50 * scale
         self.body_mid_l   = 1.90 * scale
         self.rear_axle_l  = 0.60 * scale
         self.total_l = self.front_axle_l + self.body_mid_l + self.rear_axle_l
 
         # Widths / heights
-        self.axle_w   = self.track + 0.40 * scale   # axles a bit wider (front wing feel)
+        self.axle_w   = self.track + 0.30 * scale   # axles a bit wider (front wing feel)
         self.axle_h   = 0.20 * scale
         self.body_w   = 1.00 * scale
         self.body_h   = 0.20 * scale
@@ -293,23 +291,17 @@ class RaceCar:
         self.cockpit_h = 0.5 * scale
         self.cockpit_l = 1.2 * scale
 
-        # Axle (wheel) center positions along z
         self.front_axle_z =  self.total_l * 0.5 - self.front_axle_l * 0.5
         self.rear_axle_z  = -self.total_l * 0.5 + self.rear_axle_l * 0.5
-        # Mid body center between axles
         self.body_mid_z = (self.front_axle_z + self.rear_axle_z) * 0.5
-        # Cockpit slightly rear-biased in the mid body
         self.cockpit_z = self.body_mid_z - 0.20 * scale
 
         # Wheel base derived from axle centers
         self.wheel_base = self.front_axle_z - self.rear_axle_z
 
         # Vertical placement (origin on ground y=0)
-        # Axles sit above wheels: bottom of axle ~ at wheel top plane? keep simple
         self.axle_center_y = self.wheel_radius + self.axle_h * 0.5
-        # Body rests on top of axles
         self.body_center_y = self.axle_center_y + self.axle_h * 0.5 + self.body_h * 0.5
-        # Cockpit above body
         self.cockpit_center_y = self.body_center_y + self.body_h * 0.5 + self.cockpit_h * 0.1
 
         # Colors
@@ -317,7 +309,6 @@ class RaceCar:
         self.cabin_color = cabin_color    # used for cockpit
         self.wheel_color = wheel_color
 
-        # Parts
         self.front_axle = Cube()
         self.mid_body   = Cube()
         self.rear_axle  = Cube()
@@ -414,7 +405,7 @@ class VerticalWall:
         ]
     
     def draw(self, shader):
-        shader.set_solid_color(*self.color)  # set uniform color
+        shader.set_solid_color(*self.color)
         shader.set_position_attribute(self.position_array)
         shader.set_normal_attribute(self.normal_array)
 
@@ -431,19 +422,11 @@ class HorizontalWall:
             0.0, h,   w,
             0.0, 0.0, w
             ]
-        self.normal_array = [
-            -1.0, 0.0, 0.0,
-            -1.0, 0.0, 0.0,
-            -1.0, 0.0, 0.0,
-            -1.0, 0.0, 0.0
-        ]
-        self.index_array = [
-            0, 1, 2,
-            2, 3, 0
-        ]
+        self.normal_array = [-1.0, 0.0, 0.0] * 4
+        self.index_array =  [0, 1, 2, 2, 3, 0]
     
     def draw(self, shader):
-        shader.set_solid_color(*self.color)  # set uniform color
+        shader.set_solid_color(*self.color)
         shader.set_position_attribute(self.position_array)
         shader.set_normal_attribute(self.normal_array)
 
@@ -458,25 +441,16 @@ class FloorTile:
             size,0.0, size,
             0.0, 0.0, size
             ]
-        self.normal_array = [
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0
-        ]
-        self.index_array = [
-            0, 1, 2,
-            2, 3, 0
-        ]
+        self.normal_array = [0.0, 1.0, 0.0] * 4
+        self.index_array =  [0, 1, 2, 2, 3, 0]
     
     def draw(self, shader):
-        shader.set_solid_color(*self.color)  # set uniform color
+        shader.set_solid_color(*self.color)
         shader.set_position_attribute(self.position_array)
         shader.set_normal_attribute(self.normal_array)
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
-# ...existing code...
 class FinishLine:
     # Centered checkered finish line (alternating black/white)
     def __init__(self, road_width=1.0, banks=0.0, tile_size=1.0, horizontal=True, color1=(1.0,1.0,1.0), color2=(0.0,0.0,0.0)):
@@ -504,7 +478,6 @@ class FinishLine:
             square_size = w
 
         if horizontal:
-            print("Hello WOrld")
             z0 = band_offset
             z1 = band_offset + band_thickness
             for i in range(num_squares):
@@ -519,7 +492,6 @@ class FinishLine:
                 normals = [0.0, 1.0, 0.0] * 4
                 self.squares.append((positions, normals))
         else:
-            print("Goodbye WOrld")
             x0_n = band_offset
             x1_n = band_offset + band_thickness
             for i in range(num_squares):
@@ -562,16 +534,13 @@ class HorizontalRoad:
         b = banks
         self.color = color
         self.position_array = [
-            b, 0.0, 0.0,
-            b, 0.0, s,
-            w + b, 0.0, s,
-            w + b, 0.0, 0.0
+            b,   0.0, 0.0,
+            b,   0.0, s,
+            w+b, 0.0, s,
+            w+b, 0.0, 0.0
             ]
         self.normal_array = [0.0, 1.0, 0.0] * 4
-        self.index_array = [
-            0, 1, 2,
-            2, 3, 0
-        ]
+        self.index_array =  [0, 1, 2, 2, 3, 0]
 
     def draw(self, shader):
         shader.set_solid_color(*self.color)
@@ -589,14 +558,11 @@ class VerticalRoad:
         self.position_array = [
             0.0, 0.0, b,
             s,   0.0, b,
-            s,   0.0, w + b,
-            0.0, 0.0, w + b
+            s,   0.0, w+b,
+            0.0, 0.0, w+b
             ]
         self.normal_array = [0.0, 1.0, 0.0] * 4
-        self.index_array = [
-            0, 1, 2,
-            2, 3, 0
-        ]
+        self.index_array =  [0, 1, 2, 2, 3, 0]
 
     def draw(self, shader):
         shader.set_solid_color(*self.color)
@@ -712,3 +678,41 @@ class DownRightTurnRoad:
         shader.set_normal_attribute(self.normal_array)
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+
+# ----------------------------------------------------------------------------------------------------
+# ----------------------------------------Pickup Objects----------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+
+class SpeedBoost:
+    def __init__(self, scale=1.0, color=(1.0, 0.84, 0.0)):
+        self.scale = scale
+        self.color = color
+        self.body = Sphere(latitude_bands=6, longitude_bands=6)
+        self.body_w = 1.0 * scale
+        self.body_h = 0.5 * scale
+        self.body_l = 1.0 * scale
+        # Animation state
+        self.time = 0.0
+        self.spin_speed = 0.8          # radians per second
+        self.bob_speed = 2.0           # cycles per second
+        self.bob_height = 0.25 * scale
+        # Cached animated transforms
+        self.y_offset = 0.0
+        self.spin_angle = 0.0
+
+    def update(self, delta):
+        # Advance time and cache animation values
+        self.time += delta
+        self.y_offset = sin(self.time * self.bob_speed * 2.0 * pi) * self.bob_height
+        self.spin_angle = self.time * self.spin_speed
+
+    def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
+        model_matrix.load_identity()
+        model_matrix.add_translation(position.x, position.y + self.y_offset, position.z)
+        model_matrix.add_rotation_y(yaw)
+        model_matrix.add_rotation_y(self.spin_angle)
+        model_matrix.add_scale(self.body_w, self.body_h, self.body_l)
+        shader.set_model_matrix(model_matrix.matrix)
+        shader.set_solid_color(*self.color)
+        self.body.draw(shader)

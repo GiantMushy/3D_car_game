@@ -21,7 +21,6 @@ class Camera: # ViewMatrix:
         self.follow_dir = start_direction
         self.camera_smoothness = 0.05
 
-    ## MAKE OPERATIONS TO ADD LOOK, SLIDE, PITCH, YAW and ROLL ##
     def look_at(self, eye, center, up):
         self.eye = eye
         self.n = (eye - center)
@@ -59,19 +58,17 @@ class Camera: # ViewMatrix:
         self.v = new_v
 
     def rotate_around_point(self, point, angle):
+        """ Not currently used, could be cool for special effects and just looking around """
         translated_eye = self.eye - point
 
-        # Perform yaw rotation around the Y-axis
         c = cos(angle)
         s = sin(angle)
         new_x = translated_eye.x * c - translated_eye.z * s
         new_z = translated_eye.z * c + translated_eye.x * s
         rotated_eye = Point(new_x, translated_eye.y, new_z)
 
-        # Translate the eye back to the original point
         self.eye = rotated_eye + point
 
-        # Update the n and u vectors to reflect the rotation
         self.yaw(angle)
 
     def multiply_matrices(self, m1, m2):
@@ -92,7 +89,7 @@ class Camera: # ViewMatrix:
                 0,        0,        0,        1]
     
     def update_pos(self, car_position, car_direction):
-        # Position the camera behind and above the vehicle
+        # Position the camera behind and above the vehicle, with smoothing
         t = self.camera_smoothness
         self.follow_dir = Vector(
             self.follow_dir.x + (car_direction.x - self.follow_dir.x) * t,
