@@ -7,7 +7,9 @@ from math import *
 
 
 class Camera: # ViewMatrix:
-    def __init__(self, shader, projection_matrix, camera_distance = 10.0, camera_height = 5.0, start_direction = Vector(0,0,1)):
+    CAMERA_DISTANCE = 10.0
+    CAMERA_HEIGHT = 5.0
+    def __init__(self, shader, projection_matrix, start_direction = Vector(0,0,1), start_position = (0,0)):
         self.eye = Point(0, 0, 0)
         self.u = Vector(1, 0, 0)
         self.v = Vector(0, 1, 0)
@@ -15,11 +17,20 @@ class Camera: # ViewMatrix:
 
         self.shader = shader
         self.projection_matrix = projection_matrix
-        self.camera_distance = camera_distance
-        self.camera_height = camera_height
+        self.camera_height = self.CAMERA_HEIGHT
 
+        
+        # Simplified: keep a base distance and scale distance with speed
+        self.base_distance = self.CAMERA_DISTANCE
+        self.speed_distance_scale = 0.06    # distance added per unit speed
+        self.min_distance = self.CAMERA_DISTANCE * 0.6
+        self.max_distance = self.CAMERA_DISTANCE * 1.8
+
+        # Keep mild direction smoothing so it is not too twitchy
         self.follow_dir = start_direction
-        self.camera_smoothness = 0.05
+        self.direction_smoothness = 0.08
+        self.distance_smoothness = 0.12   # 0..1, higher = faster catch-up
+        self.smoothed_distance = self.base_distance
 
     def look_at(self, eye, center, up):
         self.eye = eye
@@ -88,9 +99,9 @@ class Camera: # ViewMatrix:
                 self.n.x, self.n.y, self.n.z, minusEye.dot(self.n),
                 0,        0,        0,        1]
     
-    def update_pos(self, car_position, car_direction):
+    def update_pos(self, car_position, car_direction, car_speed):
         # Position the camera behind and above the vehicle, with smoothing
-        t = self.camera_smoothness
+        t = self.direction_smoothness
         self.follow_dir = Vector(
             self.follow_dir.x + (car_direction.x - self.follow_dir.x) * t,
             self.follow_dir.y + (car_direction.y - self.follow_dir.y) * t,
@@ -98,18 +109,30 @@ class Camera: # ViewMatrix:
         )
         self.follow_dir.normalize()
 
-        cam_position = Point(
-            car_position.x - self.follow_dir.x * self.camera_distance,
-            car_position.y + self.camera_height,
-            car_position.z - self.follow_dir.z * self.camera_distance
-        )
-        look_at_position = Point(
-            car_position.x + self.follow_dir.x,
-            car_position.y,
-            car_position.z + self.follow_dir.z
-        )
-        up_vector = Vector(0, 1, 0)
+        target_dist = self.base_distance + abs(car_speed) * self.speed_distance_scale
+        if target_dist < self.min_distance: target_dist = self.min_distance
+        if target_dist > self.max_distance: target_dist = self.max_distance
 
-        self.look_at(cam_position, look_at_position, up_vector)
+        # Smooth the distance (lag)
+        ds = self.distance_smoothness
+        self.smoothed_distance += (target_dist - self.smoothed_distance) * ds
+        
+        d = self.smoothed_distance
+        eye = Point(
+            car_position.x - self.follow_dir.x * d,
+            car_position.y + self.camera_height,
+            car_position.z - self.follow_dir.z * d
+        )
+
+        # Look slightly ahead of car
+        center = Point(
+            car_position.x + self.follow_dir.x * 2.0,
+            car_position.y,
+            car_position.z + self.follow_dir.z * 2.0
+        )
+
+        up = Vector(0, 1, 0)
+        self.look_at(eye, center, up)
+
         self.shader.set_projection_view_matrix(
             self.multiply_matrices(self.projection_matrix.get_matrix(), self.get_matrix()))

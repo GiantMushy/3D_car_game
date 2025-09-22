@@ -70,8 +70,9 @@ class Physics3D:
 
         self.enforce_tile_bounds(self.curr_tile[0], self.curr_tile[1], self.track.get_track_type(self.curr_tile[0], self.curr_tile[1]))
 
-    def enforce_tile_bounds(self, tx, ty, tile_type):
-        if tile_type == "null":
+    def enforce_tile_bounds(self, tx, ty, tile_data):
+        tile_type = tile_data[:2]
+        if tile_type == "NA":
             return  # No walls on this tile
 
         tile_min_x = tx * self.track.tile_size

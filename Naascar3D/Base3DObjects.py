@@ -19,6 +19,9 @@ class Point:
 
     def __sub__(self, other):
         return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
+    
+    def distance(self, other):
+        return sqrt((self.x - other.x)**2 + (self.y - other.y)**2 + (self.z - other.z)**2)
 
 class Vector:
     def __init__(self, x, y, z):
@@ -684,35 +687,29 @@ class DownRightTurnRoad:
 # ----------------------------------------Pickup Objects----------------------------------------------
 # ----------------------------------------------------------------------------------------------------
 
-class SpeedBoost:
-    def __init__(self, scale=1.0, color=(1.0, 0.84, 0.0)):
+class Pickup:
+    def __init__(self, scale = 1.0, type = "speed_boost", color=(1.0, 0.84, 0.0)):
         self.scale = scale
+        self.type = type
         self.color = color
         self.body = Sphere(latitude_bands=6, longitude_bands=6)
-        self.body_w = 1.0 * scale
-        self.body_h = 0.5 * scale
-        self.body_l = 1.0 * scale
+
         # Animation state
         self.time = 0.0
-        self.spin_speed = 0.8          # radians per second
-        self.bob_speed = 2.0           # cycles per second
+        self.spin_speed = 1.0          # radians per second
+        self.bob_speed = 0.8           # cycles per second
         self.bob_height = 0.25 * scale
-        # Cached animated transforms
-        self.y_offset = 0.0
+
+        # Cache original geometry for vertex-space animation
         self.spin_angle = 0.0
+        self.y_offset = 0.0
 
-    def update(self, delta):
-        # Advance time and cache animation values
-        self.time += delta
-        self.y_offset = sin(self.time * self.bob_speed * 2.0 * pi) * self.bob_height
+    def update(self, delta_time):
+        # Advance time and compute simple animated parameters
+        self.time += delta_time
         self.spin_angle = self.time * self.spin_speed
+        self.y_offset = sin(self.time * self.bob_speed * 2.0 * pi) * self.bob_height
 
-    def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
-        model_matrix.load_identity()
-        model_matrix.add_translation(position.x, position.y + self.y_offset, position.z)
-        model_matrix.add_rotation_y(yaw)
-        model_matrix.add_rotation_y(self.spin_angle)
-        model_matrix.add_scale(self.body_w, self.body_h, self.body_l)
-        shader.set_model_matrix(model_matrix.matrix)
+    def draw(self, shader):
         shader.set_solid_color(*self.color)
         self.body.draw(shader)

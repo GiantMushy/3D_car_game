@@ -17,7 +17,7 @@ from Track import *
 class GameManager:
     CAMERA_DISTANCE = 16.0
     CAMERA_HEIGHT = 5
-    TRACK_NUMBER = 1 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3
+    TRACK_NUMBER = 0 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3
 
     GRID_SIZE = 8
     SQUARE_SIZE = 32.0
@@ -35,7 +35,7 @@ class GameManager:
         start_x = self.Track.track["start"][0] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
         start_y = self.Track.track["start"][1] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
 
-        self.Vehicle = Vehicle( {"position": Point(start_x, 0.5, start_y), 
+        self.Vehicle = Vehicle( {"position": Point(start_y, 0.5, start_x), 
                                  "direction": self.Track.track["direction"], 
                                  "hitbox_size": 2.0,
                                  "speed": 0, "steering": 0, 
@@ -46,11 +46,11 @@ class GameManager:
 
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), view_settings["aspect_x"]/view_settings["aspect_y"], 0.1, 1000.0)
-        self.Camera = Camera(self.Shader, self.projection_matrix, self.CAMERA_DISTANCE, self.CAMERA_HEIGHT, self.Track.track["direction"])
-        self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction)
+        self.Camera = Camera(self.Shader, self.projection_matrix, self.Track.track["direction"], self.Track.track["start"])
+        self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
 
         # 2D UI
-        self.UI = UI(self.Shader, view_settings)
+        self.UI = UI(self.Shader, self.Vehicle, view_settings)
 
         self.clock = pygame.time.Clock()
         self.clock.tick()
@@ -66,11 +66,12 @@ class GameManager:
         delta_time = self.clock.tick() / 1000.0
         self.Vehicle.update(delta_time, (self.LEFT_key_down, self.RIGHT_key_down, self.UP_key_down, self.DOWN_key_down))
         self.Physics.enforce_track_bounds()
+        self.Pickups.update(delta_time)
     
         self.frame_count += 1
         self.frame_count = self.frame_count % 200
         if self.frame_count == 0:
-            #self.debug_prints()
+            #self.debug_positional_prints()
             pass
 
     def display(self):
@@ -79,10 +80,11 @@ class GameManager:
         GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
         GL.glViewport(*self.view_settings["viewport"])
 
-        self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction)
+        self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
 
         # 3D scene
         self.Track.draw()
+        self.Pickups.draw()
         self.Vehicle.draw(self.Shader)
 
         # 2D UI
@@ -128,7 +130,7 @@ class GameManager:
         #OUT OF GAME LOOP
         pygame.quit()
 
-    def debug_prints(self):
+    def debug_positional_prints(self):
         print("----------------------------------------------------------------------------------------------")
         print(f"Vehicle at: {self.Vehicle.position.x}, {self.Vehicle.position.y}, {self.Vehicle.position.z}")
         #print(f"----Camera at: {self.view_matrix.eye.x}, {self.view_matrix.eye.y}, {self.view_matrix.eye.z}")

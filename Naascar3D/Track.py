@@ -10,8 +10,8 @@ class Track:
         self.shader = shader
 
         self.grid_size = track_setup["grid_size"]
-        self.half_grid = self.grid_size * 0.5
         self.tile_size = track_setup["tile_size"]
+        self.half_tile = self.tile_size * 0.5
         self.road_width = track_setup["road_width"]
         self.sideline_width = (track_setup["tile_size"] - track_setup["road_width"]) * 0.5
 
@@ -29,40 +29,43 @@ class Track:
         self.track = {}
         for x in range(self.grid_size):
             for y in range(self.grid_size):
-                self.track[(x,y)] = "null"
+                self.track[(x,y)] = "NA"
 
         self.load_track(track_setup["track"])
 
     def draw(self):
         for x in range(self.grid_size):
             for y in range(self.grid_size):
-                if self.track[(x,y)] == "null":
+                tile_data = self.track[(x,y)]
+                tile_type = tile_data[:2]
+                if tile_type == "NA":
                     self.draw_ground(x, y, color = (1.0, 0.5, 0.0))
                     pass
                 
                 self.draw_ground(x, y, color = (0.2, 0.2, 0.2))
 
-                if self.track[(x,y)] == "v0":
+                if tile_type == "v0":
                     self.draw_vertical_tile(x, y)
-                elif self.track[(x,y)] == "h0":
+                elif tile_type == "h0":
                     self.draw_horizontal_tile(x, y)
-                elif self.track[(x,y)] == "d0":
+                elif tile_type == "d0":
                     self.draw_d0_turn_tile(x, y)
-                elif self.track[(x,y)] == "d1":
+                elif tile_type == "d1":
                     self.draw_d1_turn_tile(x, y)
-                elif self.track[(x,y)] == "d2":
+                elif tile_type == "d2":
                     self.draw_d2_turn_tile(x, y)
-                elif self.track[(x,y)] == "d3":
+                elif tile_type == "d3":
                     self.draw_d3_turn_tile(x, y)
-                elif self.track[(x,y)] == "v1":
+                elif tile_type == "v1":
                     self.draw_vertical_tile(x, y, finish_line=True)
-                elif self.track[(x,y)] == "h1":
+                elif tile_type == "h1":
                     self.draw_horizontal_tile(x, y, finish_line=True)
+
 
     def draw_horizontal_tile(self, x, y, finish_line=False):
         self.draw_hwall(x, y, 0)
         self.draw_hwall(x, y, 1)
-        self.set_model_matrix_and_shader(x, y, height=-0.05)
+        self.set_model_matrix_and_shader(x, y, height=-0.05, centered=False)
         self.h_road.draw(self.shader)
         if finish_line:
             self.draw_finish_line(x, y)
@@ -70,7 +73,7 @@ class Track:
     def draw_vertical_tile(self, x, y, finish_line=False):
         self.draw_vwall(x, y, 0)
         self.draw_vwall(x, y, 1)
-        self.set_model_matrix_and_shader(x, y, height=-0.05)
+        self.set_model_matrix_and_shader(x, y, height=-0.05, centered=False)
         self.v_road.draw(self.shader)
         if finish_line:
             self.draw_finish_line(x, y)
@@ -78,25 +81,25 @@ class Track:
     def draw_d0_turn_tile(self, x, y):
         self.draw_hwall(x, y, 1)
         self.draw_vwall(x, y, 0)
-        self.set_model_matrix_and_shader(x, y, height=-0.05)
+        self.set_model_matrix_and_shader(x, y, height=-0.05, centered=False)
         self.right_turn_road.draw(self.shader)
 
     def draw_d1_turn_tile(self, x, y):
         self.draw_hwall(x, y, 1)
         self.draw_vwall(x, y, 1)
-        self.set_model_matrix_and_shader(x, y, height=-0.05)
+        self.set_model_matrix_and_shader(x, y, height=-0.05, centered=False)
         self.left_turn_road.draw(self.shader)
 
     def draw_d2_turn_tile(self, x, y):
         self.draw_hwall(x, y, 0)
         self.draw_vwall(x, y, 1)
-        self.set_model_matrix_and_shader(x, y, height=-0.05)
+        self.set_model_matrix_and_shader(x, y, height=-0.05, centered=False)
         self.down_left_turn_road.draw(self.shader)
 
     def draw_d3_turn_tile(self, x, y):
         self.draw_hwall(x, y, 0)
         self.draw_vwall(x, y, 0)
-        self.set_model_matrix_and_shader(x, y, height=-0.05)
+        self.set_model_matrix_and_shader(x, y, height=-0.05, centered=False)
         self.down_right_turn_road.draw(self.shader)
 
     def draw_hwall(self, grid_x, grid_y, shift = 0):
@@ -120,19 +123,24 @@ class Track:
         self.v_wall.draw(self.shader)
 
     def draw_ground(self, grid_x, grid_y, color):
-        self.set_model_matrix_and_shader(grid_x, grid_y, height=-0.1)
+        self.set_model_matrix_and_shader(grid_x, grid_y, height=-0.1, centered=False)
         self.shader.set_solid_color(*color)
         self.ground_tile.draw(self.shader)
 
     def draw_finish_line(self, grid_x, grid_y):
-        self.set_model_matrix_and_shader(grid_x, grid_y, height=0.0)
+        self.set_model_matrix_and_shader(grid_x, grid_y, height=0.0, centered=False)
         self.finish_line.draw(self.shader)
 
-    def set_model_matrix_and_shader(self, grid_x, grid_y, height=0.0):
+    def set_model_matrix_and_shader(self, grid_x, grid_y, height=0.0, centered=True):
         self.model_matrix.load_identity()
-        self.model_matrix.add_translation(  grid_y * self.tile_size + self.half_grid,
-                                            height, 
-                                            grid_x * self.tile_size + self.half_grid)
+        if centered:
+            self.model_matrix.add_translation(  grid_y * self.tile_size + self.half_tile,
+                                                height, 
+                                                grid_x * self.tile_size + self.half_tile)
+        else:
+            self.model_matrix.add_translation(  grid_y * self.tile_size,
+                                                height, 
+                                                grid_x * self.tile_size)
         self.shader.set_model_matrix(self.model_matrix.matrix)
 
     def load_track(self, track_number):
@@ -149,56 +157,56 @@ class Track:
         """
         if track_number == 0:
             self.track = {
-                (0,0) : "null", (1,0) : "null", (2,0) : "null", (3,0) : "null", (4,0) : "null", (5,0) : "null", (6,0) : "d3",   (7,0) : "d2",
-                (0,1) : "null", (1,1) : "d3",   (2,1) : "h0",   (3,1) : "h0",   (4,1) : "h0",   (5,1) : "d2",   (6,1) : "v0",   (7,1) : "v0",
-                (0,2) : "null", (1,2) : "d0",   (2,2) : "d2",   (3,2) : "null", (4,2) : "d3",   (5,2) : "d1",   (6,2) : "v0",   (7,2) : "v0",
-                (0,3) : "null", (1,3) : "null", (2,3) : "v1",   (3,3) : "null", (4,3) : "v0",   (5,3) : "null", (6,3) : "v0",   (7,3) : "v0",
-                (0,4) : "null", (1,4) : "null", (2,4) : "v0",   (3,4) : "null", (4,4) : "v0",   (5,4) : "d3",   (6,4) : "d1",   (7,4) : "v0",
-                (0,5) : "null", (1,5) : "d3",   (2,5) : "d1",   (3,5) : "null", (4,5) : "d0",   (5,5) : "d1",   (6,5) : "null", (7,5) : "v0",
-                (0,6) : "null", (1,6) : "v0",   (2,6) : "null", (3,6) : "null", (4,6) : "d3",   (5,6) : "d2",   (6,6) : "null", (7,6) : "v0",
-                (0,7) : "null", (1,7) : "d0",   (2,7) : "h0",   (3,7) : "h0",   (4,7) : "d1",   (5,7) : "d0",   (6,7) : "h0",   (7,7) : "d1",
-                "start" : (1,3), "direction" : Vector(0,0,-1)}
+                (0,0) : "NA", (1,0) : "NA", (2,0) : "NA", (3,0) : "NA", (4,0) : "NA", (5,0) : "NA", (6,0) : "d3", (7,0) : "d2",
+                (0,1) : "NA", (1,1) : "d3", (2,1) : "h0", (3,1) : "h0", (4,1) : "h0", (5,1) : "d2", (6,1) : "v0", (7,1) : "v0s",
+                (0,2) : "NA", (1,2) : "d0", (2,2) : "d2", (3,2) : "NA", (4,2) : "d3", (5,2) : "d1", (6,2) : "v0", (7,2) : "v0",
+                (0,3) : "NA", (1,3) : "NA", (2,3) : "v1", (3,3) : "NA", (4,3) : "v0", (5,3) : "NA", (6,3) : "v0", (7,3) : "v0",
+                (0,4) : "NA", (1,4) : "NA", (2,4) : "v0b", (3,4) : "NA", (4,4) : "v0", (5,4) : "d3", (6,4) : "d1", (7,4) : "v0",
+                (0,5) : "NA", (1,5) : "d3", (2,5) : "d1", (3,5) : "NA", (4,5) : "d0", (5,5) : "d1", (6,5) : "NA", (7,5) : "v0",
+                (0,6) : "NA", (1,6) : "v0", (2,6) : "NA", (3,6) : "NA", (4,6) : "d3", (5,6) : "d2", (6,6) : "NA", (7,6) : "v0b",
+                (0,7) : "NA", (1,7) : "d0", (2,7) : "h0d", (3,7) : "h0", (4,7) : "d1", (5,7) : "d0", (6,7) : "h0", (7,7) : "d1",
+                "start" : (2,3), "direction" : Vector(1,0,0)}
             
             self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=False)
         
         elif track_number == 1:
             self.track = {
-                (0,0) : "d3", (1,0) : "h1",   (2,0) : "h0",   (3,0) : "h0",   (4,0) : "h0",   (5,0) : "h0",   (6,0) : "h0",   (7,0) : "d2",
-                (0,1) : "v0", (1,1) : "null", (2,1) : "null", (3,1) : "null", (4,1) : "null", (5,1) : "null", (6,1) : "null", (7,1) : "v0",
-                (0,2) : "v0", (1,2) : "null", (2,2) : "null", (3,2) : "null", (4,2) : "null", (5,2) : "null", (6,2) : "null", (7,2) : "v0",
-                (0,3) : "v0", (1,3) : "null", (2,3) : "null", (3,3) : "null", (4,3) : "null", (5,3) : "null", (6,3) : "null", (7,3) : "v0",
-                (0,4) : "v0", (1,4) : "null", (2,4) : "null", (3,4) : "null", (4,4) : "null", (5,4) : "null", (6,4) : "null", (7,4) : "v0",
-                (0,5) : "v0", (1,5) : "null", (2,5) : "null", (3,5) : "null", (4,5) : "null", (5,5) : "null", (6,5) : "null", (7,5) : "v0",
-                (0,6) : "v0", (1,6) : "null", (2,6) : "null", (3,6) : "null", (4,6) : "null", (5,6) : "null", (6,6) : "null", (7,6) : "v0",
-                (0,7) : "d0", (1,7) : "h0",   (2,7) : "h0",   (3,7) : "h0",   (4,7) : "h0",   (5,7) : "h0",   (6,7) : "h0",   (7,7) : "d1",
-                "start" : (0,1), "direction" : Vector(0,0,-1)}
+                (0,0) : "d3", (1,0) : "h1b",(2,0) : "h0", (3,0) : "h0", (4,0) : "h0d",(5,0) : "h0", (6,0) : "h0", (7,0) : "d2",
+                (0,1) : "v0", (1,1) : "NA", (2,1) : "NA", (3,1) : "NA", (4,1) : "NA", (5,1) : "NA", (6,1) : "NA", (7,1) : "v0",
+                (0,2) : "v0", (1,2) : "NA", (2,2) : "NA", (3,2) : "NA", (4,2) : "NA", (5,2) : "NA", (6,2) : "NA", (7,2) : "v0",
+                (0,3) : "v0", (1,3) : "NA", (2,3) : "NA", (3,3) : "NA", (4,3) : "NA", (5,3) : "NA", (6,3) : "NA", (7,3) : "v0",
+                (0,4) : "v0", (1,4) : "NA", (2,4) : "NA", (3,4) : "NA", (4,4) : "NA", (5,4) : "NA", (6,4) : "NA", (7,4) : "v0",
+                (0,5) : "v0", (1,5) : "NA", (2,5) : "NA", (3,5) : "NA", (4,5) : "NA", (5,5) : "NA", (6,5) : "NA", (7,5) : "v0",
+                (0,6) : "v0", (1,6) : "NA", (2,6) : "NA", (3,6) : "NA", (4,6) : "NA", (5,6) : "NA", (6,6) : "NA", (7,6) : "v0",
+                (0,7) : "d0b",(1,7) : "h0", (2,7) : "h0", (3,7) : "h0", (4,7) : "h0", (5,7) : "h0", (6,7) : "h0s",(7,7) : "d1",
+                "start" : (2,0), "direction" : Vector(0,0,-1)}
 
             self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=True)
         
         elif track_number == 2:
             self.track = {
-                (0,0) : "d3",   (1,0) : "h0",   (2,0) : "d2",   (3,0) : "null", (4,0) : "null", (5,0) : "null", (6,0) : "null", (7,0) : "null",
-                (0,1) : "v1",   (1,1) : "null", (2,1) : "v0",   (3,1) : "null", (4,1) : "null", (5,1) : "null", (6,1) : "null", (7,1) : "null",
-                (0,2) : "d0",   (1,2) : "h0",   (2,2) : "d1",   (3,2) : "null", (4,2) : "null", (5,2) : "null", (6,2) : "null", (7,2) : "null",
-                (0,3) : "null", (1,3) : "null", (2,3) : "null", (3,3) : "null", (4,3) : "null", (5,3) : "null", (6,3) : "null", (7,3) : "null",
-                (0,4) : "null", (1,4) : "null", (2,4) : "null", (3,4) : "null", (4,4) : "null", (5,4) : "null", (6,4) : "null", (7,4) : "null",
-                (0,5) : "null", (1,5) : "null", (2,5) : "null", (3,5) : "null", (4,5) : "null", (5,5) : "null", (6,5) : "null", (7,5) : "null",
-                (0,6) : "null", (1,6) : "null", (2,6) : "null", (3,6) : "null", (4,6) : "null", (5,6) : "null", (6,6) : "null", (7,6) : "null",
-                (0,7) : "null", (1,7) : "null", (2,7) : "null", (3,7) : "null", (4,7) : "null", (5,7) : "null", (6,7) : "null", (7,7) : "null",
+                (0,0) : "d3", (1,0) : "h0b",(2,0) : "d2", (3,0) : "NA", (4,0) : "NA", (5,0) : "NA", (6,0) : "NA", (7,0) : "NA",
+                (0,1) : "v1d",(1,1) : "NA", (2,1) : "v0d",(3,1) : "NA", (4,1) : "NA", (5,1) : "NA", (6,1) : "NA", (7,1) : "NA",
+                (0,2) : "d0", (1,2) : "h0s",(2,2) : "d1", (3,2) : "NA", (4,2) : "NA", (5,2) : "NA", (6,2) : "NA", (7,2) : "NA",
+                (0,3) : "NA", (1,3) : "NA", (2,3) : "NA", (3,3) : "NA", (4,3) : "NA", (5,3) : "NA", (6,3) : "NA", (7,3) : "NA",
+                (0,4) : "NA", (1,4) : "NA", (2,4) : "NA", (3,4) : "NA", (4,4) : "NA", (5,4) : "NA", (6,4) : "NA", (7,4) : "NA",
+                (0,5) : "NA", (1,5) : "NA", (2,5) : "NA", (3,5) : "NA", (4,5) : "NA", (5,5) : "NA", (6,5) : "NA", (7,5) : "NA",
+                (0,6) : "NA", (1,6) : "NA", (2,6) : "NA", (3,6) : "NA", (4,6) : "NA", (5,6) : "NA", (6,6) : "NA", (7,6) : "NA",
+                (0,7) : "NA", (1,7) : "NA", (2,7) : "NA", (3,7) : "NA", (4,7) : "NA", (5,7) : "NA", (6,7) : "NA", (7,7) : "NA",
                 "start" : (0,0), "direction" : Vector(1,0,0)}
             
             self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=False)
         
         elif track_number == 3:
             self.track = {
-                (0,0) : "d3",   (1,0) : "h1",   (2,0) : "d2",   (3,0) : "null", (4,0) : "null", (5,0) : "null", (6,0) : "null", (7,0) : "null",
-                (0,1) : "v0",   (1,1) : "null", (2,1) : "v0",   (3,1) : "null", (4,1) : "null", (5,1) : "null", (6,1) : "null", (7,1) : "null",
-                (0,2) : "d0",   (1,2) : "h0",   (2,2) : "d1",   (3,2) : "null", (4,2) : "null", (5,2) : "null", (6,2) : "null", (7,2) : "null",
-                (0,3) : "null", (1,3) : "null", (2,3) : "null", (3,3) : "null", (4,3) : "null", (5,3) : "null", (6,3) : "null", (7,3) : "null",
-                (0,4) : "null", (1,4) : "null", (2,4) : "null", (3,4) : "null", (4,4) : "null", (5,4) : "null", (6,4) : "null", (7,4) : "null",
-                (0,5) : "null", (1,5) : "null", (2,5) : "null", (3,5) : "null", (4,5) : "null", (5,5) : "null", (6,5) : "null", (7,5) : "null",
-                (0,6) : "null", (1,6) : "null", (2,6) : "null", (3,6) : "null", (4,6) : "null", (5,6) : "null", (6,6) : "null", (7,6) : "null",
-                (0,7) : "null", (1,7) : "null", (2,7) : "null", (3,7) : "null", (4,7) : "null", (5,7) : "null", (6,7) : "null", (7,7) : "null",
+                (0,0) : "d3", (1,0) : "h1b",(2,0) : "d2", (3,0) : "NA", (4,0) : "NA", (5,0) : "NA", (6,0) : "NA", (7,0) : "NA",
+                (0,1) : "v0b",(1,1) : "NA", (2,1) : "v0b",(3,1) : "NA", (4,1) : "NA", (5,1) : "NA", (6,1) : "NA", (7,1) : "NA",
+                (0,2) : "d0", (1,2) : "h0b",(2,2) : "d1", (3,2) : "NA", (4,2) : "NA", (5,2) : "NA", (6,2) : "NA", (7,2) : "NA",
+                (0,3) : "NA", (1,3) : "NA", (2,3) : "NA", (3,3) : "NA", (4,3) : "NA", (5,3) : "NA", (6,3) : "NA", (7,3) : "NA",
+                (0,4) : "NA", (1,4) : "NA", (2,4) : "NA", (3,4) : "NA", (4,4) : "NA", (5,4) : "NA", (6,4) : "NA", (7,4) : "NA",
+                (0,5) : "NA", (1,5) : "NA", (2,5) : "NA", (3,5) : "NA", (4,5) : "NA", (5,5) : "NA", (6,5) : "NA", (7,5) : "NA",
+                (0,6) : "NA", (1,6) : "NA", (2,6) : "NA", (3,6) : "NA", (4,6) : "NA", (5,6) : "NA", (6,6) : "NA", (7,6) : "NA",
+                (0,7) : "NA", (1,7) : "NA", (2,7) : "NA", (3,7) : "NA", (4,7) : "NA", (5,7) : "NA", (6,7) : "NA", (7,7) : "NA",
                 "start" : (0,0), "direction" : Vector(0,0,1)}
             self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=True)
 
