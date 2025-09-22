@@ -10,6 +10,7 @@ from Matrices import *
 from Camera import Camera
 from UI import UI
 from Pickups import Pickups
+from LapCounter import LapCounter
 from Physics3D import *
 from Vehicle import *
 from Track import *
@@ -23,6 +24,7 @@ class GameManager:
     SQUARE_SIZE = 32.0
     ROAD_WIDTH = 16.0
     SIDELINE_WIDTH = 8.0 #(SQUARE_SIZE - ROAD_WIDTH) / 2
+
     def __init__(self, track_number = TRACK_NUMBER, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}):
         self.view_settings = view_settings
 
@@ -43,6 +45,7 @@ class GameManager:
 
         self.Physics = Physics3D(self.Track, self.Vehicle)
         self.Pickups = Pickups(self.Track, self.Vehicle)
+        self.LapCounter = LapCounter(self.Track, self.Vehicle, total_laps=3)
 
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), view_settings["aspect_x"]/view_settings["aspect_y"], 0.1, 1000.0)
@@ -50,7 +53,7 @@ class GameManager:
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
 
         # 2D UI
-        self.UI = UI(self.Shader, self.Vehicle, view_settings)
+        self.UI = UI(self.Shader, self.Vehicle, self.LapCounter, view_settings)
 
         self.clock = pygame.time.Clock()
         self.clock.tick()
@@ -67,6 +70,7 @@ class GameManager:
         self.Vehicle.update(delta_time, (self.LEFT_key_down, self.RIGHT_key_down, self.UP_key_down, self.DOWN_key_down))
         self.Physics.enforce_track_bounds()
         self.Pickups.update(delta_time)
+        self.LapCounter.update()
     
         self.frame_count += 1
         self.frame_count = self.frame_count % 200

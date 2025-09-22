@@ -22,6 +22,9 @@ class Point:
     
     def distance(self, other):
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2 + (self.z - other.z)**2)
+    
+    def copy(self):
+        return Point(self.x, self.y, self.z)
 
 class Vector:
     def __init__(self, x, y, z):
