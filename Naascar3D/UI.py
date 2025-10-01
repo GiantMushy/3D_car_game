@@ -1,7 +1,6 @@
 from OpenGL import GL
 from Matrices import ProjectionMatrix, ModelMatrix
 from Base3DObjects import *
-from PixelText import *
 
 class UI:
     def __init__(self, Shader, Vehicle, Lap_counter, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}):
