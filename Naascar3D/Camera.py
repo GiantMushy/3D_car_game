@@ -20,7 +20,7 @@ class Camera: # ViewMatrix:
         self.camera_height = self.CAMERA_HEIGHT
 
         
-        # Simplified: keep a base distance and scale distance with speed
+        # Camera AUTOMATIC follow settings
         self.base_distance = self.CAMERA_DISTANCE
         self.speed_distance_scale = 0.06    # distance added per unit speed
         self.min_distance = self.CAMERA_DISTANCE * 0.6
@@ -31,6 +31,19 @@ class Camera: # ViewMatrix:
         self.direction_smoothness = 0.08
         self.distance_smoothness = 0.12   # 0..1, higher = faster catch-up
         self.smoothed_distance = self.base_distance
+
+
+        # Camera MANUAL control offsets
+        self.pitch_offset = 0.0        # up/down look offset (radians)
+        self.yaw_offset = 0.0          # left/right look offset (radians)
+        self.distance_offset = 0.0     # manual distance adjustment
+        self.height_offset = 0.0       # manual height adjustment
+        
+        # Control sensitivity
+        self.pitch_speed = 1.5         # radians per second
+        self.yaw_speed = 2.0           # radians per second
+        self.distance_speed = 8.0      # units per second
+        self.height_speed = 4.0        # units per second
 
     def look_at(self, eye, center, up):
         self.eye = eye
@@ -68,6 +81,28 @@ class Camera: # ViewMatrix:
         self.u = new_u
         self.v = new_v
 
+    # Add methods to adjust camera manually:
+    def adjust_pitch(self, delta_pitch):
+        self.pitch_offset += delta_pitch
+        # Clamp to prevent over-rotation
+        max_pitch = radians(60)  # look up/down limit
+        self.pitch_offset = max(-max_pitch, min(max_pitch, self.pitch_offset))
+
+    def adjust_yaw(self, delta_yaw):
+        self.yaw_offset += delta_yaw
+
+    def adjust_distance(self, delta_distance):
+        self.distance_offset += delta_distance
+
+    def adjust_height(self, delta_height):
+        self.height_offset += delta_height
+
+    def reset_offsets(self):
+        self.pitch_offset = 0.0
+        self.yaw_offset = 0.0
+        self.distance_offset = 0.0
+        self.height_offset = 0.0
+
     def rotate_around_point(self, point, angle):
         """ Not currently used, could be cool for special effects and just looking around """
         translated_eye = self.eye - point
@@ -100,7 +135,7 @@ class Camera: # ViewMatrix:
                 0,        0,        0,        1]
     
     def update_pos(self, car_position, car_direction, car_speed):
-        # Position the camera behind and above the vehicle, with smoothing
+        # Direction smoothing (unchanged)
         t = self.direction_smoothness
         self.follow_dir = Vector(
             self.follow_dir.x + (car_direction.x - self.follow_dir.x) * t,
@@ -109,30 +144,69 @@ class Camera: # ViewMatrix:
         )
         self.follow_dir.normalize()
 
+        # Distance smoothing (unchanged)
         target_dist = self.base_distance + abs(car_speed) * self.speed_distance_scale
         if target_dist < self.min_distance: target_dist = self.min_distance
         if target_dist > self.max_distance: target_dist = self.max_distance
 
-        # Smooth the distance (lag)
         ds = self.distance_smoothness
         self.smoothed_distance += (target_dist - self.smoothed_distance) * ds
         
-        d = self.smoothed_distance
-        eye = Point(
+        # Apply manual distance and height offsets
+        d = self.smoothed_distance + self.distance_offset
+        height = self.camera_height + self.height_offset
+        
+        # Base camera position (behind car)
+        base_eye = Point(
             car_position.x - self.follow_dir.x * d,
-            car_position.y + self.camera_height,
+            car_position.y + height,
             car_position.z - self.follow_dir.z * d
         )
-
-        # Look slightly ahead of car
+        
+        # Apply manual yaw rotation around car
+        if abs(self.yaw_offset) > 0.001:
+            # Rotate camera position around car
+            offset_vec = base_eye - car_position
+            cos_yaw = cos(self.yaw_offset)
+            sin_yaw = sin(self.yaw_offset)
+            new_x = offset_vec.x * cos_yaw - offset_vec.z * sin_yaw
+            new_z = offset_vec.x * sin_yaw + offset_vec.z * cos_yaw
+            base_eye = Point(car_position.x + new_x, base_eye.y, car_position.z + new_z)
+        
+        # Look target (ahead of car, with yaw offset)
+        look_dir = self.follow_dir.rotate_y(self.yaw_offset)
         center = Point(
-            car_position.x + self.follow_dir.x * 2.0,
+            car_position.x + look_dir.x * 2.0,
             car_position.y,
-            car_position.z + self.follow_dir.z * 2.0
+            car_position.z + look_dir.z * 2.0
         )
-
+        
+        # Apply pitch offset by adjusting look target
+        if abs(self.pitch_offset) > 0.001:
+            center.y += sin(self.pitch_offset) * 5.0  # pitch sensitivity
+        
         up = Vector(0, 1, 0)
-        self.look_at(eye, center, up)
+        self.look_at(base_eye, center, up)
 
         self.shader.set_projection_view_matrix(
             self.multiply_matrices(self.projection_matrix.get_matrix(), self.get_matrix()))
+        
+    def update(self, arrow_keys, delta_time):
+        if arrow_keys[0]:   # left
+            self.adjust_yaw(-self.yaw_speed * delta_time)
+        if arrow_keys[1]:   # right
+            self.adjust_yaw(self.yaw_speed * delta_time)
+        if arrow_keys[2]:   # up
+            self.adjust_pitch(self.pitch_speed * delta_time)
+        if arrow_keys[3]:   # down
+            self.adjust_pitch(-self.pitch_speed * delta_time)
+        
+        if not any(arrow_keys):
+            # smoothly return to neutral when no keys pressed
+            self.yaw_offset -= self.yaw_offset * 0.1
+            self.pitch_offset -= self.pitch_offset * 0.1
+            if abs(self.yaw_offset) < 0.01:
+                self.yaw_offset = 0.0
+            if abs(self.pitch_offset) < 0.01:
+                self.pitch_offset = 0.0
+            

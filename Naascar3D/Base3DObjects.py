@@ -323,7 +323,8 @@ class RaceCar:
         self.steering_angle = steering_angle
 
     def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
-        def draw_part(obj, color, tx, ty, tz, sx=1.0, sy=1.0, sz=1.0, rotate_y=None):
+        def draw_part(obj, color, tx, ty, tz, sx=1.0, sy=1.0, sz=1.0, rotate_y=None, 
+                    shininess=32.0, specular_strength=0.0):  # NEW: material params
             model_matrix.load_identity()
             model_matrix.add_translation(position.x, position.y, position.z)
             model_matrix.add_rotation_y(yaw)
@@ -332,54 +333,39 @@ class RaceCar:
                 model_matrix.add_rotation_y(rotate_y)
             model_matrix.add_scale(sx, sy, sz)
             shader.set_model_matrix(model_matrix.matrix)
+            
+            # Set material properties before drawing
+            shader.set_material_properties(shininess, specular_strength)
             shader.set_solid_color(*color)
             obj.draw(shader)
 
-        # Front axle cube
-        draw_part(
-            self.front_axle, self.body_color,
-            0.0, self.axle_center_y, self.front_axle_z,
-            self.axle_w, self.axle_h, self.front_axle_l
-        )
+        # Draw non-shiny parts (no specular)
+        draw_part(self.front_axle, self.body_color, 0.0, self.axle_center_y, self.front_axle_z,
+                self.axle_w, self.axle_h, self.front_axle_l)
+        
+        draw_part(self.rear_axle, self.body_color, 0.0, self.axle_center_y, self.rear_axle_z,
+                self.axle_w * 0.9, self.axle_h * 1.1, self.rear_axle_l)
+        
+        draw_part(self.mid_body, self.body_color, 0.0, self.body_center_y, self.body_mid_z,
+                self.body_w, self.body_h, self.body_mid_l)
 
-        # Rear axle cube
-        draw_part(
-            self.rear_axle, self.body_color,
-            0.0, self.axle_center_y, self.rear_axle_z,
-            self.axle_w * 0.9, self.axle_h * 1.1, self.rear_axle_l
-        )
+        # Draw SHINY cockpit with high specular strength
+        draw_part(self.cockpit, self.cabin_color, 0.0, self.cockpit_center_y, self.cockpit_z,
+                self.cockpit_w, self.cockpit_h, self.cockpit_l,
+                shininess=128.0, specular_strength=0.8)  # Very shiny!
 
-        # Central body
-        draw_part(
-            self.mid_body, self.body_color,
-            0.0, self.body_center_y, self.body_mid_z,
-            self.body_w, self.body_h, self.body_mid_l
-        )
-
-        # Cockpit
-        draw_part(
-            self.cockpit, self.cabin_color,
-            0.0, self.cockpit_center_y, self.cockpit_z,
-            self.cockpit_w, self.cockpit_h, self.cockpit_l
-        )
-
-        # Wheels (geometry spans x=[0..wheel_width], so shift so center aligns)
-        wx_left_center  = -self.track * 0.5
-        wx_right_center =  self.track * 0.5
-        wx_left  = wx_left_center  - self.wheel_width * 0.5
+        # Draw wheels (matte)
+        wx_left_center = -self.track * 0.5
+        wx_right_center = self.track * 0.5
+        wx_left = wx_left_center - self.wheel_width * 0.5
         wx_right = wx_right_center - self.wheel_width * 0.5
         wy_center = self.wheel_radius
-        wz_front  = self.front_axle_z
-        wz_back   = self.rear_axle_z
+        wz_front = self.front_axle_z
+        wz_back = self.rear_axle_z
 
-        # Front-left
-        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_front, rotate_y=self.steering_angle)
-        # Front-right
+        draw_part(self.wheel, self.wheel_color, wx_left, wy_center, wz_front, rotate_y=self.steering_angle)
         draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_front, rotate_y=self.steering_angle)
-
-        # Rear-left
-        draw_part(self.wheel, self.wheel_color, wx_left,  wy_center, wz_back)
-        # Rear-right
+        draw_part(self.wheel, self.wheel_color, wx_left, wy_center, wz_back)
         draw_part(self.wheel, self.wheel_color, wx_right, wy_center, wz_back)
 
 
@@ -392,22 +378,42 @@ class VerticalWall:
     def __init__(self, width = 1.0, height = 1.0, color=(0.5,0.5,0.5)):
         w = width
         h = height
+        p = 0.01
         self.color = color
         self.position_array = [
+            # Front face (original)
             0.0, 0.0, 0.0,
             0.0, h,   0.0,
             w,   h,   0.0,
-            w,   0.0, 0.0
-            ]
+            w,   0.0, 0.0,
+            
+            # Back face (same positions, different winding)
+            0.0, 0.0, p,
+            w,   0.0, p,
+            w,   h,   p,
+            0.0, h,   p
+        ]
         self.normal_array = [
+            # Front face normals (pointing forward +Z)
+            0.0, 0.0, -1.0,
+            0.0, 0.0, -1.0,
+            0.0, 0.0, -1.0,
+            0.0, 0.0, -1.0,
+            
+            # Back face normals (pointing backward -Z)
             0.0, 0.0, 1.0,
             0.0, 0.0, 1.0,
             0.0, 0.0, 1.0,
             0.0, 0.0, 1.0
         ]
         self.index_array = [
+            # Front face
             0, 1, 2,
-            2, 3, 0
+            2, 3, 0,
+            
+            # Back face (reversed winding for proper culling)
+            4, 5, 6,
+            6, 7, 4
         ]
     
     def draw(self, shader):
@@ -421,15 +427,43 @@ class HorizontalWall:
     def __init__(self, width = 1.0, height = 1.0, color=(0.1,0.1,0.1)):
         w = width
         h = height
+        p = 0.01
         self.color = color
         self.position_array = [
+            # Front face (original - facing +X direction)
             0.0, 0.0, 0.0,
             0.0, h,   0.0,
             0.0, h,   w,
-            0.0, 0.0, w
-            ]
-        self.normal_array = [-1.0, 0.0, 0.0] * 4
-        self.index_array =  [0, 1, 2, 2, 3, 0]
+            0.0, 0.0, w,
+            
+            # Back face (facing -X direction)
+            p, 0.0, 0.0,
+            p, 0.0, w,
+            p, h,   w,
+            p, h,   0.0
+        ]
+        self.normal_array = [
+            # Front face normals (pointing in -X direction)
+            -1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0,
+            
+            # Back face normals (pointing in +X direction)
+            1.0, 0.0, 0.0,
+            1.0, 0.0, 0.0,
+            1.0, 0.0, 0.0,
+            1.0, 0.0, 0.0
+        ]
+        self.index_array = [
+            # Front face
+            0, 1, 2, 
+            2, 3, 0,
+            
+            # Back face (reversed winding)
+            4, 5, 6,
+            6, 7, 4
+        ]
     
     def draw(self, shader):
         shader.set_solid_color(*self.color)
@@ -685,6 +719,141 @@ class DownRightTurnRoad:
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
+class Cylinder:
+    def __init__(self, length=2.0, segments=8, width=1.0):
+        self.position_array = []
+        self.normal_array = []
+        self.index_array = []
+        
+        radius = width * 0.5
+        
+        # Generate vertices for cylinder sides
+        for i in range(segments + 1):
+            angle = i * 2 * pi / segments
+            x = radius * cos(angle)
+            z = radius * sin(angle)
+            
+            # Bottom circle (y = 0)
+            self.position_array.extend([x, 0.0, z])
+            self.normal_array.extend([x/radius, 0.0, z/radius])  # normalized radial normal
+            
+            # Top circle (y = length)
+            self.position_array.extend([x, length, z])
+            self.normal_array.extend([x/radius, 0.0, z/radius])
+        
+        # Side faces (quads made of triangles)
+        for i in range(segments):
+            bottom1 = i * 2
+            top1 = bottom1 + 1
+            bottom2 = (i + 1) * 2
+            top2 = bottom2 + 1
+            
+            # First triangle
+            self.index_array.extend([bottom1, top1, bottom2])
+            # Second triangle  
+            self.index_array.extend([top1, top2, bottom2])
+        
+        # Center points for caps
+        bottom_center_idx = len(self.position_array) // 3
+        self.position_array.extend([0.0, 0.0, 0.0])
+        self.normal_array.extend([0.0, -1.0, 0.0])
+        
+        top_center_idx = bottom_center_idx + 1
+        self.position_array.extend([0.0, length, 0.0])
+        self.normal_array.extend([0.0, 1.0, 0.0])
+        
+        # Bottom cap
+        for i in range(segments):
+            edge1 = i * 2
+            edge2 = ((i + 1) % segments) * 2
+            self.index_array.extend([bottom_center_idx, edge2, edge1])
+        
+        # Top cap
+        for i in range(segments):
+            edge1 = i * 2 + 1
+            edge2 = ((i + 1) % segments) * 2 + 1
+            self.index_array.extend([top_center_idx, edge1, edge2])
+    
+    def draw(self, shader):
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+
+
+class StadiumLights:
+    def __init__(self, scale=1.0, 
+                 pole_color=(0.6, 0.6, 0.6),
+                 light_color=(0.5, 0.5, 0.5)):
+        self.scale = scale
+        
+        # Pole dimensions
+        self.pole_height = 8.0 * scale
+        self.pole_width = 0.3 * scale
+        
+        # Light fixture dimensions  
+        self.light_length = 0.2 * scale
+        self.light_width = 0.5 * scale
+        self.lights_height_offset = 0.4 * scale  # how far down from top to place lights
+        
+        # Colors
+        self.pole_color = pole_color
+        self.light_color = light_color
+        
+        # Create geometry objects
+        self.pole = Cylinder(length=self.pole_height, segments=12, width=self.pole_width)
+        self.light_fixture = Cylinder(length=self.light_length, segments=8, width=self.light_width)
+    
+    def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
+        def draw_part(obj, color, tx, ty, tz, sx=1.0, sy=1.0, sz=1.0, rotate_x=None, rotate_y=None, rotate_z=None):
+            model_matrix.load_identity()
+            model_matrix.add_translation(position.x, position.y, position.z)
+            model_matrix.add_rotation_y(yaw)
+            model_matrix.add_translation(tx, ty, tz)
+            if rotate_x is not None:
+                model_matrix.add_rotation_x(rotate_x)
+            if rotate_y is not None:
+                model_matrix.add_rotation_y(rotate_y)
+            if rotate_z is not None:
+                model_matrix.add_rotation_z(rotate_z)
+            model_matrix.add_scale(sx, sy, sz)
+            shader.set_model_matrix(model_matrix.matrix)
+            shader.set_solid_color(*color)
+            obj.draw(shader)
+        
+        # Main pole (vertical)
+        draw_part(
+            self.pole, self.pole_color,
+            0.0, 0.0, 0.0,
+            1.0, 1.0, 1.0
+        )
+        
+        
+        # Light fixtures - two rows of 3 lights each, all pointing in same direction
+        pitch_angle = radians(-15)  # angled down toward the track
+        
+        # Top row (3 lights)
+        top_row_y = self.pole_height - self.lights_height_offset
+        for i in range(3):
+            offset_x = (i - 1) * 0.4 * self.scale  # spread them out horizontally
+            offset_z = 0.3 * self.scale            # position forward from pole center
+            draw_part(
+                self.light_fixture, self.light_color,
+                offset_x, top_row_y, offset_z,
+                1.0, 1.0, 1.0,
+                rotate_x=pi/2 + pitch_angle  # horizontal + pitched down
+            )
+        
+        # Bottom row (3 lights, slightly lower)
+        bottom_row_y = top_row_y - 0.3 * self.scale
+        for i in range(3):
+            offset_x = (i - 1) * 0.4 * self.scale  # same horizontal spacing
+            offset_z = 0.3 * self.scale            # same forward position
+            draw_part(
+                self.light_fixture, self.light_color,
+                offset_x, bottom_row_y, offset_z,
+                1.0, 1.0, 1.0,
+                rotate_x=pi/2 + pitch_angle  # same angle as top row
+            )
 
 # ----------------------------------------------------------------------------------------------------
 # ----------------------------------------Pickup Objects----------------------------------------------

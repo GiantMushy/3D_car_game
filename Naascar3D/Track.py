@@ -17,7 +17,7 @@ class Track:
 
         # ----------------------------- 3D Objects for track components ----------------------------------
         self.h_wall = HorizontalWall(width=self.tile_size, height=2.0, color=(0.5,0.5,0.5))
-        self.v_wall = VerticalWall(width=self.tile_size, height=2.0, color=(0.1,0.1,0.1))
+        self.v_wall = VerticalWall(width=self.tile_size, height=2.0, color=(0.5,0.5,0.5))
         self.ground_tile = FloorTile(size=self.tile_size)
         self.h_road = HorizontalRoad(width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width)
         self.v_road = VerticalRoad(width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width)
@@ -25,6 +25,7 @@ class Track:
         self.right_turn_road = RightTurnRoad(width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width)
         self.down_left_turn_road = DownLeftTurnRoad(width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width)
         self.down_right_turn_road = DownRightTurnRoad(width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width)
+        self.stadium_lights = StadiumLights(scale=10.0, pole_color=(0.3,0.3,0.3), light_color=(0.5,0.5,0.5))
 
         self.track = {}
         for x in range(self.grid_size):
@@ -60,6 +61,12 @@ class Track:
                     self.draw_vertical_tile(x, y, finish_line=True)
                 elif tile_type == "h1":
                     self.draw_horizontal_tile(x, y, finish_line=True)
+
+        # Draw stadium lights at corners
+        self.draw_stadium_lights(Point(0,0,0), rotation=45.0)
+        self.draw_stadium_lights(Point(0,0,(self.grid_size)*self.tile_size), rotation=135.0)
+        self.draw_stadium_lights(Point((self.grid_size)*self.tile_size,0,0), rotation=315.0)
+        self.draw_stadium_lights(Point((self.grid_size)*self.tile_size,0,(self.grid_size)*self.tile_size), rotation=225.0)
 
 
     def draw_horizontal_tile(self, x, y, finish_line=False):
@@ -130,6 +137,35 @@ class Track:
     def draw_finish_line(self, grid_x, grid_y):
         self.set_model_matrix_and_shader(grid_x, grid_y, height=0.0, centered=False)
         self.finish_line.draw(self.shader)
+
+    def draw_stadium_lights(self, position, rotation):
+        rotation_radians = math.radians(rotation)
+        self.stadium_lights.draw(self.shader, self.model_matrix, position, rotation_radians)
+
+    def set_stadium_lighting(self):
+        """Configure the 4 stadium lights"""
+        grid_size = self.grid_size
+        tile_size = self.tile_size
+        light_height = 80.0  # Height of light fixtures (8.0 * scale=10.0 from StadiumLights)
+        
+        # Light positions (corners of the map, elevated)
+        light_positions = [
+            Point(0, light_height, 0),                                    # Corner 1
+            Point(0, light_height, grid_size * tile_size),               # Corner 2  
+            Point(grid_size * tile_size, light_height, 0),               # Corner 3
+            Point(grid_size * tile_size, light_height, grid_size * tile_size)  # Corner 4
+        ]
+        
+        # Light colors (warm white stadium lights)
+        light_colors = [
+            (1.0, 0.95, 0.8),  # Warm white
+            (1.0, 0.95, 0.8),
+            (1.0, 0.95, 0.8), 
+            (1.0, 0.95, 0.8)
+        ]
+        light_intensity = 15.0
+
+        self.shader.set_stadium_lights(light_positions, light_colors, [light_intensity]*4)
 
     def set_model_matrix_and_shader(self, grid_x, grid_y, height=0.0, centered=True):
         self.model_matrix.load_identity()

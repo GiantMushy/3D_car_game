@@ -29,12 +29,13 @@ class GameManager:
 
         pygame.init() 
         pygame.display.set_mode((self.view_settings["aspect_x"], self.view_settings["aspect_y"]), pygame.OPENGL|pygame.DOUBLEBUF)
-        self.Shader = Shader3D()
+        self.Shader = Shader3D(use_stadium_lights=True)
         self.Shader.use()
 
         self.Track = Track(self.Shader, {"track": track_number, "grid_size": self.GRID_SIZE, "tile_size": self.SQUARE_SIZE, "road_width": self.ROAD_WIDTH, "sideline_width": self.SIDELINE_WIDTH})
         start_x = self.Track.track["start"][0] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
         start_y = self.Track.track["start"][1] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
+        self.Track.set_stadium_lighting()
 
         self.Vehicle = Vehicle( {"position": Point(start_y, 0.5, start_x), 
                                  "direction": self.Track.track["direction"], 
@@ -45,6 +46,7 @@ class GameManager:
         self.Physics = Physics3D(self.Track, self.Vehicle)
         self.Pickups = Pickups(self.Track, self.Vehicle)
         self.LapCounter = LapCounter(self.Track, self.Vehicle, total_laps=3)
+
         
         # 3D Camera
         self.projection_matrix = ProjectionMatrix()
@@ -62,12 +64,17 @@ class GameManager:
         self.RIGHT_key_down = False
         self.UP_key_down = False
         self.DOWN_key_down = False
+        self.ARROW_UP_down = False
+        self.ARROW_DOWN_down = False
+        self.ARROW_LEFT_down = False
+        self.ARROW_RIGHT_down = False
 
         self.frame_count = 0
 
     def update(self):
         delta_time = self.clock.tick() / 1000.0
         self.Vehicle.update(delta_time, (self.LEFT_key_down, self.RIGHT_key_down, self.UP_key_down, self.DOWN_key_down))
+        self.Camera.update((self.ARROW_LEFT_down, self.ARROW_RIGHT_down, self.ARROW_UP_down, self.ARROW_DOWN_down), delta_time)
         self.Physics.enforce_track_bounds()
         self.Pickups.update(delta_time)
         self.LapCounter.update()
@@ -80,11 +87,13 @@ class GameManager:
 
     def display(self):
         GL.glEnable(GL.GL_DEPTH_TEST)  ### --- NEED THIS FOR NORMAL 3D BUT MANY EFFECTS BETTER WITH glDisable(GL_DEPTH_TEST) ... try it! --- ###
-        GL.glClearColor(0.1, 0.5, 1.0, 1.0) # blue background
+        GL.glClearColor(0.05, 0.1, 0.2, 1.0) # blue background
         GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
         GL.glViewport(*self.view_settings["viewport"])
 
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
+        self.Shader.set_camera_position(self.Camera.eye)
+        self.Track.set_stadium_lighting()
 
         # 3D scene
         self.Track.draw()
@@ -113,6 +122,14 @@ class GameManager:
                         self.LEFT_key_down = True
                     elif event.key == pygame.K_d:
                         self.RIGHT_key_down = True
+                    elif event.key == pygame.K_UP:
+                        self.ARROW_UP_down = True
+                    elif event.key == pygame.K_DOWN:
+                        self.ARROW_DOWN_down = True
+                    elif event.key == pygame.K_LEFT:
+                        self.ARROW_LEFT_down = True
+                    elif event.key == pygame.K_RIGHT:
+                        self.ARROW_RIGHT_down = True
                     if event.key == pygame.K_ESCAPE:
                         print("Escaping!")
                         exiting = True
@@ -127,6 +144,14 @@ class GameManager:
                         self.LEFT_key_down = False
                     elif event.key == pygame.K_d:
                         self.RIGHT_key_down = False
+                    elif event.key == pygame.K_UP:
+                        self.ARROW_UP_down = False
+                    elif event.key == pygame.K_DOWN:
+                        self.ARROW_DOWN_down = False
+                    elif event.key == pygame.K_LEFT:
+                        self.ARROW_LEFT_down = False
+                    elif event.key == pygame.K_RIGHT:
+                        self.ARROW_RIGHT_down = False
             
             self.update()
             self.display()
