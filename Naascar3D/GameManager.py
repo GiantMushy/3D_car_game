@@ -19,7 +19,6 @@ class GameManager:
     CAMERA_DISTANCE = 16.0
     CAMERA_HEIGHT = 5
     TRACK_NUMBER = 0 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3
-
     GRID_SIZE = 8
     SQUARE_SIZE = 32.0
     ROAD_WIDTH = 16.0
@@ -46,7 +45,8 @@ class GameManager:
         self.Physics = Physics3D(self.Track, self.Vehicle)
         self.Pickups = Pickups(self.Track, self.Vehicle)
         self.LapCounter = LapCounter(self.Track, self.Vehicle, total_laps=3)
-
+        
+        # 3D Camera
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), view_settings["aspect_x"]/view_settings["aspect_y"], 0.1, 1000.0)
         self.Camera = Camera(self.Shader, self.projection_matrix, self.Track.track["direction"], self.Track.track["start"])
