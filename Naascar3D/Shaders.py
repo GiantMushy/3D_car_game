@@ -60,10 +60,18 @@ class Shader3D:
             self.lightPositionsLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_positions")
             self.lightColorsLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_colors")
             self.lightIntensitiesLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_intensities")
-            # NEW: Material uniforms
+            
+            # Material uniforms
             self.cameraPositionLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_camera_position")
             self.shininessLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_shininess")
             self.specularStrengthLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_specular_strength")
+
+            # Moonlight Directional Light
+            self.directionalLightDirLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_directional_light_direction")
+            self.directionalLightColorLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_directional_light_color")
+            self.directionalLightIntensityLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_directional_light_intensity")
+            self.directionalLightEnabledLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_directional_light_enabled")
+
 
 
     def use(self):
@@ -116,3 +124,11 @@ class Shader3D:
         GL.glUniform3fv(self.lightPositionsLoc, 4, pos_array)
         GL.glUniform3fv(self.lightColorsLoc, 4, color_array) 
         GL.glUniform1fv(self.lightIntensitiesLoc, 4, light_intensities)
+        
+    def set_directional_light(self, direction, color, intensity, enabled=True):
+        """Set directional light (like sun/moon)"""
+        if self.use_stadium_lights:
+            GL.glUniform3f(self.directionalLightDirLoc, direction.x, direction.y, direction.z)
+            GL.glUniform3f(self.directionalLightColorLoc, color[0], color[1], color[2])
+            GL.glUniform1f(self.directionalLightIntensityLoc, intensity)
+            GL.glUniform1i(self.directionalLightEnabledLoc, 1 if enabled else 0)

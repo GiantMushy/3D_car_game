@@ -150,7 +150,7 @@ class Track:
         tile_size = self.tile_size
         light_height = 80.0  # Height of light fixtures (8.0 * scale=10.0 from StadiumLights)
         
-        # Light positions (corners of the map, elevated)
+        # Light positions
         light_positions = [
             Point(0, light_height, 0),                                    # Corner 1
             Point(0, light_height, grid_size * tile_size),               # Corner 2  
@@ -158,7 +158,7 @@ class Track:
             Point(grid_size * tile_size, light_height, grid_size * tile_size)  # Corner 4
         ]
         
-        # Light colors (warm white stadium lights)
+        # Light colors
         light_colors = [
             (1.0, 0.95, 0.8),  # Warm white
             (1.0, 0.95, 0.8),
@@ -168,6 +168,13 @@ class Track:
         light_intensity = 15.0
 
         self.shader.set_stadium_lights(light_positions, light_colors, [light_intensity]*4)
+        
+        moon_direction = Vector(0.3, -0.8, 0.2)  # Coming from upper-right
+        moon_direction.normalize()
+        moon_color = (0.2, 0.2, 0.3)  # Cool blue moonlight
+        moon_intensity = 0.1  # Subtle ambient illumination
+
+        self.shader.set_directional_light(moon_direction, moon_color, moon_intensity)
 
     def set_model_matrix_and_shader(self, grid_x, grid_y, height=0.0, centered=True):
         self.model_matrix.load_identity()

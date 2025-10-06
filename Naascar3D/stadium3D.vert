@@ -10,10 +10,16 @@ uniform vec3 u_light_positions[4];
 uniform vec3 u_light_colors[4];
 uniform float u_light_intensities[4];
 
-// NEW: Material properties
+// Material properties
 uniform vec3 u_camera_position;
 uniform float u_shininess;      
-uniform float u_specular_strength;  // How reflective the material is
+uniform float u_specular_strength;
+
+// Directional Light uniforms (moonlight)
+uniform vec3 u_directional_light_direction;
+uniform vec3 u_directional_light_color;
+uniform float u_directional_light_intensity;
+uniform bool u_directional_light_enabled;
 
 varying vec4 v_color;
 
@@ -29,9 +35,25 @@ void main(void)
     vec3 world_pos = position.xyz;
     vec3 world_normal = normalize(normal.xyz);
     
-    // Calculate lighting from all 4 stadium lights
     vec3 total_lighting = vec3(0.0, 0.0, 0.0);
     
+    // ---- 1. DIRECTIONAL LIGHT (moonlight)
+    if(u_directional_light_enabled) {
+        vec3 light_dir = normalize(-u_directional_light_direction);  // Reverse direction
+        float diffuse = max(dot(world_normal, light_dir), 0.0);
+        
+        // Specular for directional light
+        float specular = 0.0;
+        if(u_specular_strength > 0.0) {
+            vec3 view_dir = normalize(u_camera_position - world_pos);
+            vec3 reflect_dir = reflect(-light_dir, world_normal);
+            specular = pow(max(dot(view_dir, reflect_dir), 0.0), u_shininess) * u_specular_strength;
+        }
+        
+        total_lighting += u_directional_light_color * (diffuse + specular) * u_directional_light_intensity;
+    }
+    
+    // ---- 2. POSITIONAL LIGHTS (4 stadium lights)
     for(int i = 0; i < 4; i++) {
         vec3 light_dir = u_light_positions[i] - world_pos;
         float distance = length(light_dir);
@@ -55,7 +77,7 @@ void main(void)
         total_lighting += u_light_colors[i] * (diffuse + specular) * attenuation;
     }
     
-    // Very small ambient light so things aren't completely black
+    // Small ambient light so things aren't completely black
     vec3 ambient = vec3(0.01, 0.01, 0.015);
     total_lighting += ambient;
     
