@@ -3,8 +3,8 @@ from Matrices import ProjectionMatrix, ModelMatrix
 from Base3DObjects import *
 
 class UI:
-    def __init__(self, Shader, Vehicle, Lap_counter, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}):
-        self.Shader = Shader
+    def __init__(self, UI_Shader, Vehicle, Lap_counter, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}):
+        self.Shader = UI_Shader
         self.view_settings = view_settings
         self.Vehicle = Vehicle
         self.Lap_counter = Lap_counter
@@ -20,6 +20,8 @@ class UI:
 
     def draw(self):
         # Switch to ortho for 2D UI
+        self.Shader.use()
+
         self.Shader.set_projection_view_matrix(self.projection_ui.get_matrix())
 
         GL.glDisable(GL.GL_DEPTH_TEST)

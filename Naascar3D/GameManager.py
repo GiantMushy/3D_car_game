@@ -31,6 +31,7 @@ class GameManager:
         pygame.display.set_mode((self.view_settings["aspect_x"], self.view_settings["aspect_y"]), pygame.OPENGL|pygame.DOUBLEBUF)
         self.Shader = Shader3D(use_stadium_lights=True)
         self.Shader.use()
+        self.UI_Shader = Shader3D(use_stadium_lights=False)
 
         self.Track = Track(self.Shader, {"track": track_number, "grid_size": self.GRID_SIZE, "tile_size": self.SQUARE_SIZE, "road_width": self.ROAD_WIDTH, "sideline_width": self.SIDELINE_WIDTH})
         start_x = self.Track.track["start"][0] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
@@ -55,7 +56,7 @@ class GameManager:
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
 
         # 2D UI
-        self.UI = UI(self.Shader, self.Vehicle, self.LapCounter, view_settings)
+        self.UI = UI(self.UI_Shader, self.Vehicle, self.LapCounter, view_settings)
 
         self.clock = pygame.time.Clock()
         self.clock.tick()
@@ -91,6 +92,7 @@ class GameManager:
         GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
         GL.glViewport(*self.view_settings["viewport"])
 
+        self.Shader.use()
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
         self.Shader.set_camera_position(self.Camera.eye)
         self.Track.set_stadium_lighting()

@@ -26,6 +26,7 @@ class Track:
         self.down_left_turn_road = DownLeftTurnRoad(width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width)
         self.down_right_turn_road = DownRightTurnRoad(width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width)
         self.stadium_lights = StadiumLights(scale=10.0, pole_color=(0.3,0.3,0.3), light_color=(0.5,0.5,0.5))
+        self.world_border = StadiumBorder(world_width=self.grid_size*self.tile_size, border_height=10.0, color=(0.5,0.5,0.5))
 
         self.track = {}
         for x in range(self.grid_size):
@@ -67,6 +68,7 @@ class Track:
         self.draw_stadium_lights(Point(0,0,(self.grid_size)*self.tile_size), rotation=135.0)
         self.draw_stadium_lights(Point((self.grid_size)*self.tile_size,0,0), rotation=315.0)
         self.draw_stadium_lights(Point((self.grid_size)*self.tile_size,0,(self.grid_size)*self.tile_size), rotation=225.0)
+        self.world_border.draw(self.shader, self.model_matrix)
 
 
     def draw_horizontal_tile(self, x, y, finish_line=False):

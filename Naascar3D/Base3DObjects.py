@@ -472,6 +472,94 @@ class HorizontalWall:
 
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
+class StadiumBorder:
+    ''' Draws simple single-sided walls around the track's boundaries '''
+    def __init__(self, world_width=1.0, border_height=1.0, color=(0.5,0.5,0.5)):
+        self.world_width = world_width
+        self.border_height = border_height
+        self.color = color
+        self.wall_thickness = 1.0
+        
+        # Create single-sided walls manually
+        self._create_walls()
+    
+    def _create_walls(self):
+        w = self.world_width
+        h = self.border_height
+        t = self.wall_thickness
+        
+        # North wall (top) - faces south (into the track)
+        self.north_positions = [
+            -t, 0.0, -t,    # bottom-left
+            -t, h,   -t,    # top-left
+            w+t, h,  -t,    # top-right
+            w+t, 0.0, -t    # bottom-right
+        ]
+        self.north_normals = [0.0, 0.0, 1.0] * 4  # facing +Z (south)
+        
+        # South wall (bottom) - faces north (into the track)
+        self.south_positions = [
+            w+t, 0.0, w+t,  # bottom-right
+            w+t, h,   w+t,  # top-right
+            -t,  h,   w+t,  # top-left
+            -t,  0.0, w+t   # bottom-left
+        ]
+        self.south_normals = [0.0, 0.0, -1.0] * 4  # facing -Z (north)
+        
+        # West wall (left) - faces east (into the track)
+        self.west_positions = [
+            -t, 0.0, w+t,   # bottom-back
+            -t, h,   w+t,   # top-back
+            -t, h,   -t,    # top-front
+            -t, 0.0, -t     # bottom-front
+        ]
+        self.west_normals = [1.0, 0.0, 0.0] * 4  # facing +X (east)
+        
+        # East wall (right) - faces west (into the track)
+        self.east_positions = [
+            w+t, 0.0, -t,   # bottom-front
+            w+t, h,   -t,   # top-front
+            w+t, h,   w+t,  # top-back
+            w+t, 0.0, w+t   # bottom-back
+        ]
+        self.east_normals = [-1.0, 0.0, 0.0] * 4  # facing -X (west)
+        
+        # Shared index array for all walls (two triangles per wall)
+        self.indices = [0, 1, 2, 2, 3, 0]
+    
+    def draw(self, shader, model_matrix):
+        # Set material properties for walls (no specular)
+        shader.set_material_properties(32.0, 0.0)
+        shader.set_solid_color(*self.color)
+        
+        # North wall
+        model_matrix.load_identity()
+        shader.set_model_matrix(model_matrix.matrix)
+        shader.set_position_attribute(self.north_positions)
+        shader.set_normal_attribute(self.north_normals)
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.indices), GL.GL_UNSIGNED_INT, self.indices)
+        
+        # South wall
+        model_matrix.load_identity()
+        shader.set_model_matrix(model_matrix.matrix)
+        shader.set_position_attribute(self.south_positions)
+        shader.set_normal_attribute(self.south_normals)
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.indices), GL.GL_UNSIGNED_INT, self.indices)
+        
+        # West wall
+        model_matrix.load_identity()
+        shader.set_model_matrix(model_matrix.matrix)
+        shader.set_position_attribute(self.west_positions)
+        shader.set_normal_attribute(self.west_normals)
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.indices), GL.GL_UNSIGNED_INT, self.indices)
+        
+        # East wall
+        model_matrix.load_identity()
+        shader.set_model_matrix(model_matrix.matrix)
+        shader.set_position_attribute(self.east_positions)
+        shader.set_normal_attribute(self.east_normals)
+        GL.glDrawElements(GL.GL_TRIANGLES, len(self.indices), GL.GL_UNSIGNED_INT, self.indices)
+
 class FloorTile:
     def __init__(self, size = 1.0, color=(0.0,0.5,0.0)):
         self.color = color
