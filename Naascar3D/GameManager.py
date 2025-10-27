@@ -24,7 +24,7 @@ class GameManager:
     ROAD_WIDTH = 16.0
     SIDELINE_WIDTH = 8.0 #(SQUARE_SIZE - ROAD_WIDTH) / 2
 
-    def __init__(self, track_number = TRACK_NUMBER, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}):
+    def __init__(self, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}, game_settings = {"track_number": TRACK_NUMBER}):
         self.view_settings = view_settings
 
         pygame.init() 
@@ -33,7 +33,12 @@ class GameManager:
         self.Shader.use()
         self.UI_Shader = Shader3D(use_stadium_lights=False)
 
-        self.Track = Track(self.Shader, {"track": track_number, "grid_size": self.GRID_SIZE, "tile_size": self.SQUARE_SIZE, "road_width": self.ROAD_WIDTH, "sideline_width": self.SIDELINE_WIDTH})
+        self.Track = Track(self.Shader, {"track": game_settings["track_number"], 
+                                         "grid_size": self.GRID_SIZE, 
+                                         "tile_size": self.SQUARE_SIZE, 
+                                         "road_width": self.ROAD_WIDTH, 
+                                         "sideline_width": self.SIDELINE_WIDTH})
+        
         start_x = self.Track.track["start"][0] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
         start_y = self.Track.track["start"][1] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
         self.Track.set_stadium_lighting()
