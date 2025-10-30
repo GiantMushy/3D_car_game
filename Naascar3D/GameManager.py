@@ -13,6 +13,7 @@ from Pickups import Pickups
 from LapCounter import LapCounter
 from Physics3D import *
 from Vehicle import *
+from VehicleGhost import *
 from Track import *
 
 class GameManager:
@@ -23,6 +24,8 @@ class GameManager:
     SQUARE_SIZE = 32.0
     ROAD_WIDTH = 16.0
     SIDELINE_WIDTH = 8.0 #(SQUARE_SIZE - ROAD_WIDTH) / 2
+    MINIMUM_TRACK_LENGTH = 16
+    MAXIMUM_TRACK_LENGTH = 24 #Could take a while to load lmao
 
     def __init__(self, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}, game_settings = {"track_number": TRACK_NUMBER}):
         self.view_settings = view_settings
@@ -33,21 +36,32 @@ class GameManager:
         self.Shader.use()
         self.UI_Shader = Shader3D(use_stadium_lights=False)
 
-        self.Track = Track(self.Shader, {"track": game_settings["track_number"], 
-                                         "grid_size": self.GRID_SIZE, 
-                                         "tile_size": self.SQUARE_SIZE, 
-                                         "road_width": self.ROAD_WIDTH, 
-                                         "sideline_width": self.SIDELINE_WIDTH})
+        self.Track = Track(self.Shader, settings = {
+            "track_id": game_settings["track_number"], 
+            "grid_size": self.GRID_SIZE, 
+            "tile_size": self.SQUARE_SIZE, 
+            "road_width": self.ROAD_WIDTH, 
+            "sideline_width": self.SIDELINE_WIDTH,
+            "min_length": 10,
+            "max_length": 24
+        })
         
-        start_x = self.Track.track["start"][0] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
-        start_y = self.Track.track["start"][1] * self.SQUARE_SIZE + self.SQUARE_SIZE/2
-        self.Track.set_stadium_lighting()
+        (start_x, start_y) = self.Track.start_coordinates()
 
-        self.Vehicle = Vehicle( {"position": Point(start_y, 0.5, start_x), 
-                                 "direction": self.Track.track["direction"], 
-                                 "hitbox_size": 2.0,
-                                 "speed": 0, "steering": 0, 
-                                 "color": (1.0, 0.0, 0.0)})
+        self.Vehicle = Vehicle( settings = {
+            "position": Point(start_y, 0.5, start_x), 
+            "direction": Vector(self.Track.Grid.start.direction[1],0,self.Track.Grid.start.direction[0]), 
+            "hitbox_size": 2.0,
+            "speed": 0, "steering": 0, 
+            "color": (1.0, 0.0, 0.0)
+        })
+        
+        self.Ghost = Ghost( self.Track, settings = {
+            "starting_pos" : Point(start_y, 0.5, start_x),
+            "starting_direction" : Vector(self.Track.Grid.start.direction[1],0,self.Track.Grid.start.direction[0]),
+            "speed" : 5,
+            "hitbox_size": 2.0
+        })
 
         self.Physics = Physics3D(self.Track, self.Vehicle)
         self.Pickups = Pickups(self.Track, self.Vehicle)
@@ -57,7 +71,7 @@ class GameManager:
         # 3D Camera
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), view_settings["aspect_x"]/view_settings["aspect_y"], 0.1, 1000.0)
-        self.Camera = Camera(self.Shader, self.projection_matrix, self.Track.track["direction"], self.Track.track["start"])
+        self.Camera = Camera(self.Shader, self.projection_matrix, self.Track.Grid.start.direction, self.Track.Grid.start.position)
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
 
         # 2D UI
@@ -80,6 +94,7 @@ class GameManager:
     def update(self):
         delta_time = self.clock.tick() / 1000.0
         self.Vehicle.update(delta_time, (self.LEFT_key_down, self.RIGHT_key_down, self.UP_key_down, self.DOWN_key_down))
+        self.Ghost.update(delta_time)
         self.Camera.update((self.ARROW_LEFT_down, self.ARROW_RIGHT_down, self.ARROW_UP_down, self.ARROW_DOWN_down), delta_time)
         self.Physics.enforce_track_bounds()
         self.Pickups.update(delta_time)
@@ -106,6 +121,7 @@ class GameManager:
         self.Track.draw()
         self.Pickups.draw()
         self.Vehicle.draw(self.Shader)
+        self.Ghost.draw(self.Shader)
 
         # 2D UI
         self.UI.draw()

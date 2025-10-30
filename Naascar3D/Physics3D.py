@@ -7,7 +7,7 @@ class Physics3D:
         self.track = track
         self.vehicle = vehicle
 
-        self.curr_tile = self.track.track["start"]
+        self.curr_tile = self.track.Grid.start.position
 
     def update_current_tile(self):
         # I know this is confusing, but the track's grid is (x,y) while the car's position is (x,y,z), so (z,x) == (x,y)
@@ -30,7 +30,7 @@ class Physics3D:
 
         # Use pre-calculated bounds directly in the ranges
         self.active_tiles = {
-            (x, y): self.track.get_track_type(x, y)
+            (x, y): self.track.get_cell_type((x, y))
             for x in range(x_min, x_max)
             for y in range(y_min, y_max)
         }
@@ -68,7 +68,7 @@ class Physics3D:
     def enforce_track_bounds(self):
         self.update_current_tile()
 
-        self.enforce_tile_bounds(self.curr_tile[0], self.curr_tile[1], self.track.get_track_type(self.curr_tile[0], self.curr_tile[1]))
+        self.enforce_tile_bounds(self.curr_tile[0], self.curr_tile[1], self.track.get_cell_type((self.curr_tile[0], self.curr_tile[1])))
 
     def enforce_tile_bounds(self, tx, ty, tile_data):
         tile_type = tile_data[:2]

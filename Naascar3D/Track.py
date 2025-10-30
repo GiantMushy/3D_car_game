@@ -1,3 +1,4 @@
+import os
 from OpenGL import GL, GLU
 from math import *
 from random import *
@@ -7,6 +8,30 @@ from Matrices import ModelMatrix
 
 
 class Cell:
+    ''' 
+    Node for the Track's grid. Each node contains the following data:
+
+    position:
+        (x,y)
+    type:
+        v0 = vertical road without finish line
+        h0 = horizontal road without finish line
+        v1 = vertical road with finish line
+        h1 = horizontal road with finish line
+        d1 = 90 degree turn (bottom to right) (45 degree clockwise)
+        d2 = 90 degree turn (left to bottom) (135 degree clockwise)
+        d3 = 90 degree turn (top to left) (225 degree clockwise)
+        d4 = 90 degree turn (right to top) (315 degree clockwise)
+    exit_direction:
+        ( 0, 1) = north
+        ( 0,-1) = south
+        ( 1, 0) = east
+        (-1, 0) = west
+    powerup:
+        b = boost
+        s = slow
+        d = disable
+    '''
     def __init__(self, position=(0,0), type="XX", next=None, direction=None, powerup=None):
         self.position = position
         self.type = type
@@ -40,7 +65,7 @@ class Cell:
     
     def __str__(self):
         if self.type == "XX":
-            return " . "
+            return "   "
         elif self.type == "v0":
             return " | "
         elif self.type == "v1":
@@ -57,6 +82,8 @@ class Cell:
             return " ┘ "
         elif self.type == "d3":
             return " └ "
+        else:
+            return "OO"
 
 class Grid:
     TRACK_TYPE_FOR_DIRECTIONAL_CHANGE = {
@@ -81,16 +108,16 @@ class Grid:
         (( 0,-1), ( 0, 1)): 'x'
     }
 
-    def __init__(self, size=8, track_length=8):
-        self.size = size
+    def __init__(self, settings = {"size":8, "min_length":10, "max_length":16}):
+        self.size = settings["size"]
         self.start = None
-        self.track_length = track_length
+        self.min_length = settings["min_length"]
+        self.max_length = settings["max_length"]
+        self.length = 1
         self.cells = {}
-        for x in range(size):
-            for y in range(size):
+        for x in range(self.size):
+            for y in range(self.size):
                 self.cells[(x,y)] = Cell(position=(x,y), type="XX")
-        
-        self.generate_random_track()
     
     def get_cell(self, position):
         return self.cells.get(position, None)
@@ -106,10 +133,10 @@ class Grid:
         y = randint(0, self.size - 1)
 
         # Prevent corners
-        if (x == 0 and y == 0):
+        if (x == 0 and (y == 0 or y == self.size - 1)):
+            x += 1
+        elif (y == 0 and (x == 0 or x == self.size - 1)):
             y += 1
-        elif (x == self.size - 1) and y == self.size - 1:
-            x -= 1
 
         self.start = self.get_cell((x, y))
         # Determine valid tile types based on position
@@ -131,98 +158,88 @@ class Grid:
         cell = self.get_cell(pos)
         return cell is not None and cell.type == "XX"
     
+    def reached_end_check(self, pos, direction, length):
+        if pos == self.start.position:
+            if direction == self.start.direction:
+                if length >= self.min_length and length <= self.max_length:
+                    return True
+        return False
+    
     def generate_random_track(self):
         self.set_random_start()
 
         self.dfs(self.start.next, self.start.direction, 1)
         print(self)
     
-    def reached_end_check(self, pos, direction, length):
-        return pos == self.start.position and length == self.track_length and direction == self.start.direction
-    
     def dfs(self, cell, old_direction, length):
-        if length <= self.track_length:
-            directions = [ (1,0), (0,1), (-1,0), (0,-1) ]  # N, E, S, W
-            shuffle(directions)  # make genereration random
-            
-            for new_direction in directions:
-                new_type = self.TRACK_TYPE_FOR_DIRECTIONAL_CHANGE[(old_direction, new_direction)]
-                next_pos = self.add_positions(cell.position, new_direction)
+        directions = [ (0,1), (1,0), (0,-1), (-1,0) ]  # N, E, S, W
+        shuffle(directions)  # make genereration random
 
-                if self.bounds_check(next_pos) and self.is_cell_empty(next_pos) and new_type != "x":
-                    if self.reached_end_check(next_pos, new_direction, length):
-                        cell.direction = new_direction
-                        cell.next = self.start
-                        cell.type = new_type
-                        return cell
-                    else:
-                        next_cell = self.dfs(self.get_cell(next_pos), new_direction, length + 1)
-                        if next_cell is not None:
-                            cell.direction = new_direction
-                            cell.next = next_cell
-                            cell.type = new_type
-                            print(self)
-                            return cell
-        return None
+        if length <= self.max_length:
+            for new_direction in directions:
+                cell.type = self.TRACK_TYPE_FOR_DIRECTIONAL_CHANGE[(old_direction, new_direction)]
+                cell.direction = new_direction
+                next_pos = self.add_positions(cell.position, cell.direction)
+                cell.next = self.get_cell(next_pos)
+                
+                print(f"----------- Current Attempt = [next_pos: {next_pos} , next_dir: {new_direction} , length: {length}] -----------")
+                print(self)
+     
+                if self.reached_end_check(next_pos, cell.direction, length):
+                    print("Found HAHA!")
+                    self.length += 1
+                    print(self)
+                    return True
+                
+                elif self.bounds_check(next_pos) and self.is_cell_empty(next_pos) and cell.type != "x": # check if the propsed direction is valid
+                    if self.dfs(cell.next, cell.direction, length + 1):
+                        print("Found!!!" + f"length: {length}")
+                        print(self)
+                        self.length += 1
+                        return True
+                
+                cell.direction = None
+                cell.type = "XX"
+                cell.next = None
+
+        return False
+    
+    def load_preset(data):
+        pass
 
     def __str__(self):
+        #os.system('cls' if os.name == 'nt' else 'clear')
         output = []
-        for x in range(self.size):
+        for y in range(self.size):
             output.append([])
-            for y in range(self.size):
-                output[x].append("   ")
-        node = self.start
-        for n in range(self.size):
-            if node is not None:
-                pos = node.position
-                output[self.size - 1 - pos[0]][pos[1]] = str(node)
-                node = node.next
-        
-        result = []
-        for row in output:
-            result.append(", ".join(row))
-        return "\n".join(result) + "\n\n"
+            for x in range(self.size):
+                node = self.get_cell((x,self.size - 1 - y))
+                output[y].append(str(node))
 
+        
+        ret = "  ──────────────────────────────────────────────\n"
+        for n in range(self.size):
+            ret += f"{self.size - 1 - n} "
+            ret += "│" + " , ".join(output[n]) + "│\n"
+
+        ret += "  ──────────────────────────────────────────────\n"
+        ret += "   0     1     2     3     4     5     6     7\n"
+        return ret
 
 
 class Track:
-    TRACK_LENGTH = 8
-    DIRECTIONAL_VECTOR = {
-        'N': ( 1, 0),
-        'S': (-1, 0),
-        'E': ( 0, 1),
-        'W': ( 0,-1)
-    }
-    TRACK_TYPE_FOR_DIRECTIONAL_CHANGE = {
-        ('N', 'N'): 'v0',
-        ('N', 'E'): 'd0',
-        ('N', 'W'): 'd1',
-        ('N', 'S'): 'XX',
+    TRACK_MAX_LENGTH = 16
+    TRACK_MIN_LENGTH = 6
 
-        ('S', 'S'): 'v0',
-        ('S', 'E'): 'd3',
-        ('S', 'W'): 'd2',
-        ('S', 'N'): 'XX',
-
-        ('E', 'E'): 'h0',
-        ('E', 'N'): 'd3',
-        ('E', 'S'): 'd0',
-        ('E', 'W'): 'XX',
-
-        ('W', 'W'): 'h0',
-        ('W', 'N'): 'd2',
-        ('W', 'S'): 'd1',
-        ('W', 'E'): 'XX'
-    }
-    def __init__(self, shader, track_setup = {"track": 0, "grid_size": 8, "tile_size": 32.0, "road_width": 16.0}):
+    def __init__(self, shader, settings = {"track_id": 0, "grid_size": 8, "tile_size": 32.0, "road_width": 16.0, "min_length": 16, "max_length": 24}):
         self.model_matrix = ModelMatrix()
         self.shader = shader
 
-        self.grid_size = track_setup["grid_size"]
-        self.tile_size = track_setup["tile_size"]
+        self.grid_size = settings["grid_size"]
+        self.tile_size = settings["tile_size"]
         self.half_tile = self.tile_size * 0.5
-        self.road_width = track_setup["road_width"]
-        self.sideline_width = (track_setup["tile_size"] - track_setup["road_width"]) * 0.5
+        self.road_width = settings["road_width"]
+        self.sideline_width = (settings["tile_size"] - settings["road_width"]) * 0.5
 
         # ----------------------------- 3D Objects for track components ----------------------------------
         self.ground_tile = FloorTile(size=self.tile_size)
@@ -239,49 +256,47 @@ class Track:
         
         self.stadium_lights = StadiumLights(scale=10.0, pole_color=(0.3,0.3,0.3), light_color=(0.5,0.5,0.5))
         self.world_border = StadiumBorder(world_width=self.grid_size*self.tile_size, border_height=10.0, color=(0.5,0.5,0.5))
+        self.set_stadium_lighting()
 
-        self.init_empty_track()
-
-        self.load_track(track_setup["track"])
-
-    def init_empty_track(self):
-        ''' Creates an empty track layout '''
-        self.track = {}
-        for x in range(self.grid_size):
-            for y in range(self.grid_size):
-                self.track[(x,y)] = "NA"
-                
-    def get_cell_data(self, pos):
-        ''' Returns the track data at the given grid position '''
-        if pos not in self.track:
-            return "NA"
-        return self.track[pos]
-    
-    def get_cell_type(self, data):
-        ''' Returns the tile type for the given track data '''
-        return data[:2]
-
-    def get_cell_direction(self, data):
-        ''' Returns the exit direction vector for the given track data '''
-        return self.DIRECTIONS[data[2]]
-    
-    def get_cell_powerup(self, data):
-        ''' Returns the powerup type for the given track data '''
-        if len(data) < 4:
-            return None
-        return data[3]
+        # ---------------------------------------- Track Layout -----------------------------------------
+        grid_settings = {"size": settings["grid_size"], "min_length": settings["min_length"], "max_length": settings["max_length"]}
+        self.Grid = Grid(grid_settings)
+        self.load_track(settings["track_id"])
     
     def add_positions(self, pos1, pos2):
         return (pos1[0] + pos2[0], pos1[1] + pos2[1])
     
-    def subtract_positions(self, pos1, pos2):
-        return (pos1[0] - pos2[0], pos1[1] - pos2[1])
+    def get_cell(self, pos):
+        return self.Grid.get_cell(pos)
+    
+    def get_cell_type(self, pos):
+        cell = self.get_cell(pos)
+        return cell.type
+
+    def get_cell_powerup(self, pos):
+        cell = self.get_cell(pos)
+        return cell.powerup
+        
+    def get_cell_direction(self, pos):
+        cell = self.get_cell(pos)
+        return cell.direction
+    
+    def get_start_postion(self):
+        return self.Grid.start.position
+    
+    def grid_pos_to_coords(self, pos):
+        ''' Translates the grid's (x,y) position (x and y are between 0 and self.grid_size) to the games real world (x,y) coordinates '''
+        x = pos[0] * self.tile_size + self.tile_size/2
+        y = pos[1] * self.tile_size + self.tile_size/2
+        return (x, y)
+        
+    def start_coordinates(self):
+        return self.grid_pos_to_coords(self.Grid.start.position)
 
     def draw(self):
         for x in range(self.grid_size):
             for y in range(self.grid_size):
-                tile_data = self.track[(x,y)]
-                tile_type = tile_data[:2]
+                tile_type = self.get_cell_type((x,y))
                 if tile_type == "NA":
                     self.draw_ground(x, y, color = (1.0, 0.5, 0.0))
                     pass
@@ -432,227 +447,32 @@ class Track:
 
 
     # ------------------------------- MAP GENERATION -------------------------------
-    def set_random_starting_position(self):
-        starting_cell, starting_cell_type = self.get_valid_starting_tilechoice()
-        starting_tile_direction = Vector(1 if starting_cell_type == "v1N" else 0, 0, 0 if starting_cell_type == "v1N" else 1)
-
-        self.track[starting_cell] = starting_cell_type
-        self.track["start"] = starting_cell
-        self.track["direction"] = starting_tile_direction
-    
-    def get_valid_starting_tilechoice(self):
-        x = randint(0, self.grid_size - 1)
-        y = randint(0, self.grid_size - 1)
-
-        # Prevent corners
-        if (x == 0 and y == 0):
-            y += 1
-        elif (x == self.grid_size - 1) and y == self.grid_size - 1:
-            x -= 1
-
-        # Determine valid tile types based on position
-        if   x == 0 or x == self.grid_size - 1: # Left or right edge
-            return (x,y), "v1N"
-        elif y == 0 or y == self.grid_size - 1: # Top or bottom edge  
-            return (x,y), "h1E"
-        else:  # Interior
-            return (x,y), choice(["v1N","h1E"])
-            
-    def generate_random_track(self):
-        ''' 
-        Algorithm that generates a random track layout with DFS
-        empty cells are "NA"
-        
-        Number of cells: self.grid_size x self.grid_size
-        
-        tile data consists of:
-        (x,y) : "[tile_type][exit_direction][powerup]"
-
-        tile_type:
-            v0 = vertical road without finish line
-            h0 = horizontal road without finish line
-            v1 = vertical road with finish line
-            h1 = horizontal road with finish line
-            d1 = 90 degree turn (bottom to right) (45 degree clockwise)
-            d2 = 90 degree turn (left to bottom) (135 degree clockwise)
-            d3 = 90 degree turn (top to left) (225 degree clockwise)
-            d4 = 90 degree turn (right to top) (315 degree clockwise)
-        exit_direction:
-            N = north
-            S = south
-            E = east
-            W = west
-        powerup:
-            b = boost
-            s = slow
-            d = disable
-        '''
-        self.init_empty_track()
-        self.set_random_starting_position()
-        
-        starting_cell_position = self.track["start"]
-        starting_cell_data = self.get_cell_data(starting_cell_position)
-
-        print("Starting DEF algorithm at cell:", starting_cell_position, "Type:", starting_cell_data)
-        next_cell_position = self.add_positions(starting_cell_position + self.DIRECTIONS[starting_cell_data[2]])
-        self.dfs_recursion(next_cell_position, 1)
-        self.print("Final Track Layout:")
-        self.draw_track_debug()
-
-    def dfs_recursion(self, current_type, current_pos, track_length):
-        print("------ DFS at position:", current_pos, "Type:", current_type, "Length:", track_length)
-        direction = self.DIRECTIONS[current_type[2]]
-        next_track_pos = (current_pos[0] + direction[0], current_pos[1] + direction[1])
-        
-        if (track_length > self.TRACK_LENGTH or         # Base Case: exceeded track length
-            self.is_out_of_bounds(next_track_pos) or    # Base Case: out of bounds
-            self.track[next_track_pos] != "NA"):        # Base Case: already occupied
-            
-            return False
-        
-        if next_track_pos == self.track["start"]:   # Base case: reached end of track
-            if track_length != self.TRACK_LENGTH or current_type[2] != self.gen_track[self.gen_track["start"]][2]:# not correct length or not coming from the correct direction
-                
-                self.gen_track[current_pos] = "NA" # clear cell and backtrack
-                self.draw_track_debug()
-                return False
-            self.track[current_pos] = current_type
-            self.draw_track_debug()
-            print("Track generation complete!")
-            return True # successfully completed track
-        
-        directions = ['N', 'S', 'E', 'W']
-        shuffle(directions)  # make genereration random
-        
-        for new_direction in directions:
-            next_type = self.TRACK_TYPE_FOR_DIRECTIONAL_CHANGE[(current_type[2], new_direction)]
-            if next_type != 'X':
-                self.gen_track[next_track_pos] = next_type + new_direction
-                if self.dfs_recursion(next_type + new_direction, next_track_pos, track_length + 1):
-                    print("Hello from the backtrack")
-                    self.track[current_pos] = current_type
-                    self.draw_track_debug()
-                    return True
-        
-        self.gen_track[current_pos] = "NA" # clear cell and backtrack 
-        return False
-
-    def is_out_of_bounds(self, position):
-        return position[0] < 0 or position[0] >= self.grid_size or position[1] < 0 or position[1] >= self.grid_size
-
     def load_track(self, track_number):
-        """
-        v0 = horizontal road
-        h1 = horizontal road with finish/start line
-        h0 = vertical road
-        v1 = vertical road with finish/start line
-        d0 = 90 degree turn (bottom to right) (45 degree clockwise)
-        d1 = 90 degree turn (left to bottom) (135 degree clockwise)
-        d2 = 90 degree turn (top to left) (225 degree clockwise)
-        d3 = 90 degree turn (right to top) (315 degree clockwise)
-
-        """
         if track_number == 0:
-            self.generate_random_track()
-            self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=(self.track[self.track["start"]][0] == 'h'))
+            self.Grid.generate_random_track()
 
         if track_number == 1:
-            self.track = {
-                (0,0) : "NA", (1,0) : "NA", (2,0) : "NA", (3,0) : "NA", (4,0) : "NA", (5,0) : "NA", (6,0) : "d3", (7,0) : "d2",
-                (0,1) : "NA", (1,1) : "d3", (2,1) : "h0", (3,1) : "h0", (4,1) : "h0", (5,1) : "d2", (6,1) : "v0", (7,1) : "v0s",
-                (0,2) : "NA", (1,2) : "d0", (2,2) : "d2", (3,2) : "NA", (4,2) : "d3", (5,2) : "d1", (6,2) : "v0", (7,2) : "v0",
-                (0,3) : "NA", (1,3) : "NA", (2,3) : "v1", (3,3) : "NA", (4,3) : "v0", (5,3) : "NA", (6,3) : "v0", (7,3) : "v0",
-                (0,4) : "NA", (1,4) : "NA", (2,4) : "v0b",(3,4) : "NA", (4,4) : "v0", (5,4) : "d3", (6,4) : "d1", (7,4) : "v0",
-                (0,5) : "NA", (1,5) : "d3", (2,5) : "d1", (3,5) : "NA", (4,5) : "d0", (5,5) : "d1", (6,5) : "NA", (7,5) : "v0",
-                (0,6) : "NA", (1,6) : "v0", (2,6) : "NA", (3,6) : "NA", (4,6) : "d3", (5,6) : "d2", (6,6) : "NA", (7,6) : "v0b",
-                (0,7) : "NA", (1,7) : "d0", (2,7) : "h0d",(3,7) : "h0", (4,7) : "d1", (5,7) : "d0", (6,7) : "h0", (7,7) : "d1",
-                "start" : (2,3), "direction" : Vector(1,0,0)}
-            
-            self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=False)
+            self.Grid.load_preset({"start" : (2,3), "direction" : (1,0), "layout": [
+                "v1", "v0b", "d1", "d3", "v0", "d0", "h0d", "h0", "d1", "d3", "d2", "d0", "h0", 
+                "d1", "v0b", "v0", "v0", "v0", "v0", "v0s", "d2", "d3", "v0", "v0", "v0", "d1",
+                "d3", "d1", "d0", "v0", "v0", "d3", "d1", "d2", "h0", "h0", "h0", "d3", "d0", "d2"]})
         
         elif track_number == 2:
-            self.track = {
-                (0,0) : "d3", (1,0) : "h1W",(2,0) : "h0W", (3,0) : "h0W", (4,0) : "h0Wd",(5,0) : "h0W", (6,0) : "h0W", (7,0) : "d2W",
-                (0,1) : "v0", (1,1) : "NA", (2,1) : "NA", (3,1) : "NA", (4,1) : "NA", (5,1) : "NA", (6,1) : "NA", (7,1) : "v0",
-                (0,2) : "v0", (1,2) : "NA", (2,2) : "NA", (3,2) : "NA", (4,2) : "NA", (5,2) : "NA", (6,2) : "NA", (7,2) : "v0",
-                (0,3) : "v0", (1,3) : "NA", (2,3) : "NA", (3,3) : "NA", (4,3) : "NA", (5,3) : "NA", (6,3) : "NA", (7,3) : "v0",
-                (0,4) : "v0", (1,4) : "NA", (2,4) : "NA", (3,4) : "NA", (4,4) : "NA", (5,4) : "NA", (6,4) : "NA", (7,4) : "v0",
-                (0,5) : "v0", (1,5) : "NA", (2,5) : "NA", (3,5) : "NA", (4,5) : "NA", (5,5) : "NA", (6,5) : "NA", (7,5) : "v0",
-                (0,6) : "v0", (1,6) : "NA", (2,6) : "NA", (3,6) : "NA", (4,6) : "NA", (5,6) : "NA", (6,6) : "NA", (7,6) : "v0",
-                (0,7) : "d0b",(1,7) : "h0", (2,7) : "h0", (3,7) : "h0", (4,7) : "h0", (5,7) : "h0", (6,7) : "h0s",(7,7) : "d1",
-                "start" : (1,0), "direction" : Vector(0,0,-1)}
-
-            self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=True)
+            self.Grid.load_preset({"start" : (1,0), "direction" : (0, -1), "layout": [
+                "h1", "h0", "h0", "h0", "h0", "h0", "d2", "v0", "v0", "v0", "v0", "v0", "v0", "d1", 
+                "h0", "h0", "h0", "h0", "h0", "j0", "d0", "v0", "v0", "v0", "v0", "v0", "v0", "d3"]})
         
         elif track_number == 3:
-            self.track = {
-                (0,0) : "d3", (1,0) : "h0b",(2,0) : "d2", (3,0) : "NA", (4,0) : "NA", (5,0) : "NA", (6,0) : "NA", (7,0) : "NA",
-                (0,1) : "v1",(1,1) : "NA", (2,1) : "v0d",(3,1) : "NA", (4,1) : "NA", (5,1) : "NA", (6,1) : "NA", (7,1) : "NA",
-                (0,2) : "d0", (1,2) : "h0s",(2,2) : "d1", (3,2) : "NA", (4,2) : "NA", (5,2) : "NA", (6,2) : "NA", (7,2) : "NA",
-                (0,3) : "NA", (1,3) : "NA", (2,3) : "NA", (3,3) : "NA", (4,3) : "NA", (5,3) : "NA", (6,3) : "NA", (7,3) : "NA",
-                (0,4) : "NA", (1,4) : "NA", (2,4) : "NA", (3,4) : "NA", (4,4) : "NA", (5,4) : "NA", (6,4) : "NA", (7,4) : "NA",
-                (0,5) : "NA", (1,5) : "NA", (2,5) : "NA", (3,5) : "NA", (4,5) : "NA", (5,5) : "NA", (6,5) : "NA", (7,5) : "NA",
-                (0,6) : "NA", (1,6) : "NA", (2,6) : "NA", (3,6) : "NA", (4,6) : "NA", (5,6) : "NA", (6,6) : "NA", (7,6) : "NA",
-                (0,7) : "NA", (1,7) : "NA", (2,7) : "NA", (3,7) : "NA", (4,7) : "NA", (5,7) : "NA", (6,7) : "NA", (7,7) : "NA",
-                "start" : (0,1), "direction" : Vector(1,0,0)}
-            
-            self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=False)
+            self.Grid.load_preset({"start" : (0,1), "direction" : Vector(1,0), "layout" : [
+                "v1", "d3", "h0", "d2", "v0", "d1", "h0", "d0"]})
         
-        elif track_number == 4:
-            self.track = {
-                (0,0) : "d3", (1,0) : "h1",(2,0) : "d2", (3,0) : "NA", (4,0) : "NA", (5,0) : "NA", (6,0) : "NA", (7,0) : "NA",
-                (0,1) : "v0b",(1,1) : "NA", (2,1) : "v0b",(3,1) : "NA", (4,1) : "NA", (5,1) : "NA", (6,1) : "NA", (7,1) : "NA",
-                (0,2) : "d0", (1,2) : "h0b",(2,2) : "d1", (3,2) : "NA", (4,2) : "NA", (5,2) : "NA", (6,2) : "NA", (7,2) : "NA",
-                (0,3) : "NA", (1,3) : "NA", (2,3) : "NA", (3,3) : "NA", (4,3) : "NA", (5,3) : "NA", (6,3) : "NA", (7,3) : "NA",
-                (0,4) : "NA", (1,4) : "NA", (2,4) : "NA", (3,4) : "NA", (4,4) : "NA", (5,4) : "NA", (6,4) : "NA", (7,4) : "NA",
-                (0,5) : "NA", (1,5) : "NA", (2,5) : "NA", (3,5) : "NA", (4,5) : "NA", (5,5) : "NA", (6,5) : "NA", (7,5) : "NA",
-                (0,6) : "NA", (1,6) : "NA", (2,6) : "NA", (3,6) : "NA", (4,6) : "NA", (5,6) : "NA", (6,6) : "NA", (7,6) : "NA",
-                (0,7) : "NA", (1,7) : "NA", (2,7) : "NA", (3,7) : "NA", (4,7) : "NA", (5,7) : "NA", (6,7) : "NA", (7,7) : "NA",
-                "start" : (0,0), "direction" : Vector(0,0,1)}
-            self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=True)
+        self.finish_line = FinishLine(road_width=self.road_width, tile_size=self.tile_size, banks=self.sideline_width, horizontal=(self.Grid.start.type[0] == 'h'))
 
     def draw_track_debug(self):
         '''
         Draws the track in text format with starting position marked as 'S'
         '''
-        start_pos = self.track.get("start", None)
-        
-        print("\n" + "="*40 + " TRACK DEBUG " + "="*40)
-        for x in range(self.grid_size):
-            row = ""
-            x = self.grid_size - 1 - x  # Invert x to match visual layout
-            for y in range(self.grid_size):
-                tile_data = self.track[(x,y)]
-                tile_type = tile_data[:2]
-                
-                if tile_type == "NA":
-                    row += " . "
-                elif tile_type == "v0":
-                    row += " | "
-                elif tile_type == "v1":
-                    row += "S| "
-                elif tile_type == "h0":
-                    row += "---"
-                elif tile_type == "h1":
-                    row += "-S-"
-                elif tile_type == "d0":
-                    row += " ┌ "
-                elif tile_type == "d1":
-                    row += " ┐ "
-                elif tile_type == "d2":
-                    row += " ┘ "
-                elif tile_type == "d3":
-                    row += " └ "
-            print(row)
-        
-        if start_pos:
-            print(f"Start: {start_pos} | Tile: {self.track[start_pos]}")
-        print("="*93)
-
-    def get_track_type(self, x, y):
-        return self.track[(x, y)]
+        print(self.Grid)
 
 if __name__ == "__main__":
     grid = Grid()
-    grid.generate_random_track()
-    print(grid)

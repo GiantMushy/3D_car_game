@@ -20,6 +20,12 @@ class Point:
     def __sub__(self, other):
         return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
     
+    def __mul__(self, x):
+        return Point(self.x * x, self.y * x, self.z * x)
+    
+    def __rmul__(self, x):
+        return Point(self.x * x, self.y * x, self.z * x)
+    
     def distance(self, other):
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2 + (self.z - other.z)**2)
     

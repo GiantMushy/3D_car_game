@@ -42,20 +42,19 @@ class Pickups:
     def init_pickups(self):
         for gx in range(self.track.grid_size):
             for gy in range(self.track.grid_size):
-                tile_data = self.track.get_track_type(gx, gy)
-                tile_pickups = tile_data[2:]
-                if tile_pickups:
+                cell_pickups = self.track.get_cell_powerup((gx, gy))
+                if cell_pickups:
                     # grid (gx,gy) -> world (z = gx, x = gy)
                     world_x = gy * self.track.tile_size + self.track.half_tile
                     world_z = gx * self.track.tile_size + self.track.half_tile
                     base_y = 1.5
                     pickup_pos = Point(world_x, base_y, world_z)
 
-                    if 'b' in tile_pickups:
+                    if 'b' in cell_pickups:
                         self.pickups.append(PickupEntity(object=Pickup(type='speed_boost', scale=2.0, color=(0.0, 1.0, 0.0)), position=pickup_pos))
-                    if 's' in tile_pickups:
+                    if 's' in cell_pickups:
                         self.pickups.append(PickupEntity(object=Pickup(type='slow_down', scale=2.0, color=(1.0, 1.0, 0.0)), position=pickup_pos))
-                    if 'd' in tile_pickups:
+                    if 'd' in cell_pickups:
                         self.pickups.append(PickupEntity(object=Pickup(type='disable', scale=2.0, color=(1.0, 0.0, 0.0)), position=pickup_pos))
 
 

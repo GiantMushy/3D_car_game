@@ -12,16 +12,18 @@ class LapCounter:
         self.half_tile = track.half_tile
         tile_size = track.tile_size
 
+        self.start_direction = self.track.Grid.start.direction
+        self.start_direction = Point(self.start_direction[1], 0, self.start_direction[0])
         self.total_laps = total_laps
-        self.horizontal = (track.track["direction"] == Point(0,0,1)) or (track.track["direction"] == Point(0,0,-1))
-        self.starting_pos = Point(track.track["start"][1] * tile_size + self.half_tile, 0.0, track.track["start"][0] * tile_size + self.half_tile)
+        self.horizontal = (self.track.Grid.start.direction == (1,0))
+        self.starting_pos = Point(self.track.Grid.start.position[1] * tile_size + self.half_tile, 0.0, self.track.Grid.start.position[0] * tile_size + self.half_tile)
 
         self.finish_line_pos = self.starting_pos
         self.checkpoint_1_pos = self.starting_pos.copy()
         self.checkpoint_2_pos = self.starting_pos.copy()
 
-        self.checkpoint_1_pos += self.track.track["direction"] * self.half_tile
-        self.checkpoint_2_pos -= self.track.track["direction"] * self.half_tile
+        self.checkpoint_1_pos += self.start_direction * self.half_tile
+        self.checkpoint_2_pos -= self.start_direction * self.half_tile
 
         self.finish_line =  { "pos": self.finish_line_pos }
         self.checkpoint_1 = { "pos": self.checkpoint_1_pos, "passed": False }
