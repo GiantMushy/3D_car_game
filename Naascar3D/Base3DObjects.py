@@ -7,6 +7,34 @@ from OpenGL import GL, GLU, error
 import math
 from math import *
 
+class Coordinate:
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        return Coordinate(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Coordinate(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, n):
+        return Coordinate(self.x * n, self.y * n)
+
+    def __rmul__(self, n):
+        return Coordinate(self.x * n, self.y * n)
+
+    def __eq__(self, other):
+        if isinstance(other, Coordinate):
+            return self.x == other.x and self.y == other.y
+        return False
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __repr__(self):
+        return f"Coordinate({self.x}, {self.y})"
+
 
 class Point:
     def __init__(self, x, y, z):

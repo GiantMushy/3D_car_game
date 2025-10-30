@@ -1,5 +1,7 @@
 import math
 
+from Base3DObjects import Coordinate
+
 class Physics3D:
     GRAVITY = -9.81
 
@@ -7,7 +9,7 @@ class Physics3D:
         self.track = track
         self.vehicle = vehicle
 
-        self.curr_tile = self.track.Grid.start.position
+        self.curr_tile = (self.track.Grid.start.x, self.track.Grid.start.y)
 
     def update_current_tile(self):
         # I know this is confusing, but the track's grid is (x,y) while the car's position is (x,y,z), so (z,x) == (x,y)
@@ -30,7 +32,7 @@ class Physics3D:
 
         # Use pre-calculated bounds directly in the ranges
         self.active_tiles = {
-            (x, y): self.track.get_cell_type((x, y))
+            (x, y): self.track.get_cell_type(Coordinate(x, y))
             for x in range(x_min, x_max)
             for y in range(y_min, y_max)
         }
@@ -68,65 +70,64 @@ class Physics3D:
     def enforce_track_bounds(self):
         self.update_current_tile()
 
-        self.enforce_tile_bounds(self.curr_tile[0], self.curr_tile[1], self.track.get_cell_type((self.curr_tile[0], self.curr_tile[1])))
+        self.enforce_tile_bounds(self.track.get_cell(Coordinate(self.curr_tile[0], self.curr_tile[1])))
 
-    def enforce_tile_bounds(self, tx, ty, tile_data):
-        tile_type = tile_data[:2]
-        if tile_type == "NA":
+    def enforce_tile_bounds(self, cell):
+        if cell.type == "XX":
             return  # No walls on this tile
 
-        tile_min_x = tx * self.track.tile_size
-        tile_max_x = (tx + 1) * self.track.tile_size
-        tile_min_y = ty * self.track.tile_size
-        tile_max_y = (ty + 1) * self.track.tile_size
+        tile_min_x = cell.x * self.track.tile_size
+        tile_min_y = cell.y * self.track.tile_size
+        tile_max_x = (cell.x + 1) * self.track.tile_size
+        tile_max_y = (cell.y + 1) * self.track.tile_size
 
         car_x, car_y = self.vehicle.position.z, self.vehicle.position.x # Note the swap: car's z is track's x
         hitbox = self.vehicle.hitbox_size
 
-        if tile_type in ("h0", "h1"):  # Horizontal road
+        if cell.type in ("h0", "h1"):  # Horizontal road
             if car_y - hitbox < tile_min_y:
                 self.collide(0, 1)  # Collide with bottom wall
-                print("Collide with bottom wall")
+                #print("Collide with bottom wall")
             elif car_y + hitbox > tile_max_y:
                 self.collide(0, -1) # Collide with top wall
-                print("Collide with top wall")
+                #print("Collide with top wall")
 
-        elif tile_type in ("v0", "v1"):  # Vertical road
+        elif cell.type in ("v0", "v1"):  # Vertical road
             if car_x - hitbox < tile_min_x:
                 self.collide(1, 0)  # Collide with left wall
-                print("Collide with left wall")
+                #print("Collide with left wall")
             elif car_x + hitbox > tile_max_x:
                 self.collide(-1, 0) # Collide with right wall
-                print("Collide with right wall")
+                #print("Collide with right wall")
         
-        elif tile_type == "d0":  # 90 degree turn (bottom to right) (45 degree clockwise)
+        elif cell.type == "d0":  # 90 degree turn (bottom to right) (45 degree clockwise)
             if car_x - hitbox < tile_min_x:
                 self.collide(1, 0)  # Collide with left wall
-                print("Collide with left wall")
+                #print("Collide with left wall")
             elif car_y + hitbox > tile_max_y:
                 self.collide(0, -1) # Collide with top wall
-                print("Collide with top wall")
+                #print("Collide with top wall")
 
-        elif tile_type == "d1":  # 90 degree turn (left to bottom) (135 degree clockwise)
+        elif cell.type == "d1":  # 90 degree turn (left to bottom) (135 degree clockwise)
             if car_x + hitbox > tile_max_x:
                 self.collide(-1, 0) # Collide with right wall
-                print("Collide with right wall")
+                #print("Collide with right wall")
             elif car_y + hitbox > tile_max_y:
                 self.collide(0, -1) # Collide with top wall
-                print("Collide with top wall")
+                #print("Collide with top wall")
 
-        elif tile_type == "d2":  # 90 degree turn (top to left) (225 degree clockwise)
+        elif cell.type == "d2":  # 90 degree turn (top to left) (225 degree clockwise)
             if car_x + hitbox > tile_max_x:
                 self.collide(-1, 0) # Collide with right wall
-                print("Collide with right wall")
+                #print("Collide with right wall")
             elif car_y - hitbox < tile_min_y:
                 self.collide(0, 1)  # Collide with bottom wall
-                print("Collide with bottom wall")
+                #print("Collide with bottom wall")
 
-        elif tile_type == "d3":  # 90 degree turn (right to top) (315 degree clockwise)
+        elif cell.type == "d3":  # 90 degree turn (right to top) (315 degree clockwise)
             if car_x - hitbox < tile_min_x:
                 self.collide(1, 0)  # Collide with left wall
-                print("Collide with left wall")
+                #print("Collide with left wall")
             elif car_y - hitbox < tile_min_y:
                 self.collide(0, 1)  # Collide with bottom wall
-                print("Collide with bottom wall")
+                #print("Collide with bottom wall")

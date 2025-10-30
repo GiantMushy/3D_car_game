@@ -42,25 +42,28 @@ class GameManager:
             "tile_size": self.SQUARE_SIZE, 
             "road_width": self.ROAD_WIDTH, 
             "sideline_width": self.SIDELINE_WIDTH,
-            "min_length": 10,
-            "max_length": 24
+            "min_length": 6,
+            "max_length": 10
         })
         
-        (start_x, start_y) = self.Track.start_coordinates()
+        starting_position = self.Track.start_coordinates()
+        start_dir_x = self.Track.Grid.start.direction.x
+        start_dir_y = self.Track.Grid.start.direction.y
 
         self.Vehicle = Vehicle( settings = {
-            "position": Point(start_y, 0.5, start_x), 
-            "direction": Vector(self.Track.Grid.start.direction[1],0,self.Track.Grid.start.direction[0]), 
+            "position": starting_position, 
+            "direction": Vector(start_dir_y,0,start_dir_x), 
             "hitbox_size": 2.0,
             "speed": 0, "steering": 0, 
             "color": (1.0, 0.0, 0.0)
         })
         
         self.Ghost = Ghost( self.Track, settings = {
-            "starting_pos" : Point(start_y, 0.5, start_x),
-            "starting_direction" : Vector(self.Track.Grid.start.direction[1],0,self.Track.Grid.start.direction[0]),
+            "position": starting_position, 
+            "direction" : Vector(start_dir_y,0,start_dir_x),
+            "hitbox_size": 2.0,
             "speed" : 5,
-            "hitbox_size": 2.0
+            "color": (0.0, 1.0,)
         })
 
         self.Physics = Physics3D(self.Track, self.Vehicle)
@@ -71,7 +74,7 @@ class GameManager:
         # 3D Camera
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), view_settings["aspect_x"]/view_settings["aspect_y"], 0.1, 1000.0)
-        self.Camera = Camera(self.Shader, self.projection_matrix, self.Track.Grid.start.direction, self.Track.Grid.start.position)
+        self.Camera = Camera(self.Shader, self.projection_matrix, self.Track.Grid.start.direction)
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
 
         # 2D UI

@@ -3,9 +3,9 @@ from Matrices import *
 from Base3DObjects import RaceCar
 
 class Ghost:
-    def __init__(self, track, settings = {"starting_pos" : Point(0,0,0), "starting_direction" : Vector(1,0,0), "speed" : 5, "hitbox_size" : 2}):
-        self.pos =         settings["starting_pos"]
-        self.direction =   settings["starting_direction"]
+    def __init__(self, track, settings = {"position" : Point(0,0,0), "direction" : Vector(1,0,0), "speed" : 5, "hitbox_size" : 2}):
+        self.pos =         settings["position"]
+        self.direction =   settings["direction"]
         self.speed =       settings["speed"]
         
         self.Track = track
