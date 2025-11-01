@@ -42,7 +42,7 @@ class Pickups:
     def init_pickups(self):
         for gx in range(self.track.grid_size):
             for gy in range(self.track.grid_size):
-                cell_pickups = self.track.get_cell_powerup((gx, gy))
+                cell_pickups = self.track.get_cell_powerup(Coordinate(gx, gy))
                 if cell_pickups:
                     # grid (gx,gy) -> world (z = gx, x = gy)
                     world_x = gy * self.track.tile_size + self.track.half_tile

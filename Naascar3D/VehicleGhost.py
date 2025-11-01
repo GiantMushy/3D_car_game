@@ -10,11 +10,7 @@ class Ghost:
         
         self.Track = track
         self.ModelMatrix = ModelMatrix()
-        self.Body = RaceCar(
-                body_color=(0.1, 0.9, 0.1),
-                cabin_color=(0.30, 0.80, 0.90),
-                wheel_color=(0.1, 0.1, 0.1),
-                steering_angle=0.0)
+        self.Body = RaceCar(2)
 
         self.current_cell = self.Track.Grid.start
         self.t = 0.0
@@ -77,9 +73,9 @@ class Ghost:
         turn_threshold = 0.01
         
         if cross_y > turn_threshold:
-            self.Body.steering_angle = -0.6
+            self.Body.steering_angle = -0.3
         elif cross_y < -turn_threshold:
-            self.Body.steering_angle = 0.6
+            self.Body.steering_angle = 0.3
         else:
             self.Body.steering_angle = 0.0
 

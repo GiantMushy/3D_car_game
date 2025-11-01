@@ -174,6 +174,8 @@ class Grid:
 
         if length <= self.max_length:
             for new_direction in directions:
+                if cell.type == "x":
+                    continue
                 cell.type = self.TRACK_TYPE_FOR_DIRECTIONAL_CHANGE[(old_direction, new_direction)]
                 cell.direction = new_direction
                 next_pos = cell.get_next_pos()
@@ -181,16 +183,20 @@ class Grid:
                 
                 print(f"----------- Current Attempt = [next_pos: {next_pos} , next_dir: {new_direction} , length: {length}] -----------")
                 print(self)
-     
-                if self.reached_end_check(next_pos, cell.direction, length):
-                    self.length += 1
-                    print(self)
-                    return True
                 
-                elif self.bounds_check(next_pos) and self.is_cell_empty(next_pos) and cell.type != "x": # check if the propsed direction is valid
+                if next_pos.x == self.start.x and next_pos.y == self.start.y:
+                    if cell.direction == self.start.direction:
+                        if length >= self.min_length and length <= self.max_length:
+                            self.length += 1
+                            print(self)
+                            return True
+                    return False
+                
+                elif self.bounds_check(next_pos) and self.is_cell_empty(next_pos): # check if the propsed direction is valid
                     if self.dfs(cell.next, cell.direction, length + 1):
                         print(self)
                         self.length += 1
+                        self.assign_random_powerup(cell)
                         return True
                 
                 cell.direction = Coordinate()
@@ -201,6 +207,16 @@ class Grid:
     
     def load_preset(data):
         pass
+
+    def assign_random_powerup(self, cell):
+        if cell.type in ["v0", "h0"]:
+            num = randint(0, 10)
+            if num < 3:
+                cell.powerup = "b"
+            elif num == 3:
+                cell.powerup = "s"
+            elif num == 9:
+                cell.powerup = "d"
 
     def __str__(self):
         #os.system('cls' if os.name == 'nt' else 'clear')

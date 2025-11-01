@@ -4,6 +4,8 @@ from random import *
 
 from OpenGL import GL, GLU, error
 
+from MeshLoader import *
+
 import math
 from math import *
 
@@ -128,71 +130,16 @@ class Vector:
 # ----------------------------------------------------------------------------------------------------
 # ---------------------------------------RaceCar Objects----------------------------------------------
 # ----------------------------------------------------------------------------------------------------
+MeshLoader = MeshLoader()
 
 class Cube:
+    FILENAME = "cube"
     def __init__(self):
-        self.position_array = [
-            -0.5, -0.5, -0.5, # back face
-            -0.5,  0.5, -0.5,
-             0.5,  0.5, -0.5,
-             0.5, -0.5, -0.5,
-             
-            -0.5, -0.5,  0.5, # front face
-            -0.5,  0.5,  0.5,
-             0.5,  0.5,  0.5,
-             0.5, -0.5,  0.5,
-
-            -0.5, -0.5, -0.5, # bottom face
-             0.5, -0.5, -0.5,
-             0.5, -0.5,  0.5,
-            -0.5, -0.5,  0.5,
-
-            -0.5,  0.5, -0.5, # top face
-             0.5,  0.5, -0.5,
-             0.5,  0.5,  0.5,
-            -0.5,  0.5,  0.5,
-
-            -0.5, -0.5, -0.5, # left face
-            -0.5, -0.5,  0.5,
-            -0.5,  0.5,  0.5,
-            -0.5,  0.5, -0.5,
-
-             0.5, -0.5, -0.5, # right face
-             0.5, -0.5,  0.5,
-             0.5,  0.5,  0.5,
-             0.5,  0.5, -0.5
-             ]
-        self.normal_array = [
-             0.0,  0.0, -1.0, # back face
-             0.0,  0.0, -1.0,
-             0.0,  0.0, -1.0,
-             0.0,  0.0, -1.0,
-
-             0.0,  0.0,  1.0, # front face
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-             
-             0.0, -1.0,  0.0, # bottom face
-             0.0, -1.0,  0.0,
-             0.0, -1.0,  0.0,
-             0.0, -1.0,  0.0,
-
-             0.0,  1.0,  0.0, # top face
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-
-             0.0, -1.0,  0.0, # left face
-             0.0, -1.0,  0.0,
-             0.0, -1.0,  0.0,
-             0.0, -1.0,  0.0,
-
-             1.0,  0.0,  0.0, # right face
-             1.0,  0.0,  0.0,
-             1.0,  0.0,  0.0,
-             1.0,  0.0,  0.0
-             ]
+        if MeshLoader.mesh_exists(self.FILENAME):
+            mesh_data = MeshLoader.load_mesh(self.FILENAME)
+            self.position_array = mesh_data.positions
+            self.normal_array = mesh_data.normals
+            #print(f"Loaded mesh from file: {self.FILENAME}.json")
 
     def draw(self, shader):
         
@@ -208,17 +155,32 @@ class Cube:
 
 
 class Sphere:
-    def __init__(self, latitude_bands = 10, longitude_bands = 10):
+    FILENAME = "sphere"
+    def __init__(self, bands = 10):
+        name = self.FILENAME + "_" + str(bands)
+        if MeshLoader.mesh_exists(name):
+            mesh_data = MeshLoader.load_mesh(name)
+            self.position_array = mesh_data.positions
+            self.normal_array = mesh_data.normals
+            self.index_array = mesh_data.indices
+            print(f"Loaded mesh from file: {name}.json")
+        
+        else:
+            self._generate_mesh(bands)
+            MeshLoader.save_mesh(name, self.position_array, self.normal_array, self.index_array)
+            print(f"Saved mesh to file:    {name}.json")
+
+    def _generate_mesh(self, bands):
         self.position_array = []
         self.normal_array = []
 
-        for lat_number in range(0, latitude_bands + 1):
-            theta = lat_number * pi / latitude_bands
+        for lat_number in range(0, bands + 1):
+            theta = lat_number * pi / bands
             sin_theta = sin(theta)
             cos_theta = cos(theta)
 
-            for long_number in range(0, longitude_bands + 1):
-                phi = long_number * 2 * pi / longitude_bands
+            for long_number in range(0, bands + 1):
+                phi = long_number * 2 * pi / bands
                 sin_phi = sin(phi)
                 cos_phi = cos(phi)
 
@@ -234,10 +196,10 @@ class Sphere:
                 self.position_array.append(z * 0.5)
 
         self.index_array = []
-        for lat_number in range(0, latitude_bands):
-            for long_number in range(0, longitude_bands):
-                first = (lat_number * (longitude_bands + 1)) + long_number
-                second = first + longitude_bands + 1
+        for lat_number in range(0, bands):
+            for long_number in range(0, bands):
+                first = (lat_number * (bands + 1)) + long_number
+                second = first + bands + 1
                 self.index_array.append(first)
                 self.index_array.append(second)
                 self.index_array.append(first + 1)
@@ -254,11 +216,25 @@ class Sphere:
 
 
 class Wheel:
+    FILENAME = "wheel"
     def __init__(self, radius=1.0, width=1.0, segments=8):
+        name = self.FILENAME + "_r_w_seg$" + str(radius) + "_" + str(width) + "_" + str(segments)
+        if MeshLoader.mesh_exists(name):
+            mesh_data = MeshLoader.load_mesh(name)
+            self.position_array = mesh_data.positions
+            self.normal_array = mesh_data.normals
+            self.index_array = mesh_data.indices
+            print(f"Loaded mesh from file: {name}.json")
+        
+        else:
+            self._generate_mesh(radius, width, segments)
+            MeshLoader.save_mesh(name, self.position_array, self.normal_array, self.index_array)
+            print(f"Saved mesh to file:    {name}.json")
+    
+    def _generate_mesh(self, radius, width, segments):
         self.position_array = []
         self.normal_array = []
         self.index_array = []
-
 
         # Side vertices
         for i in range(segments + 1):
@@ -311,36 +287,42 @@ class Wheel:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class RaceCar:
-    def __init__(self, scale=1.0,
-                 body_color=(0.9, 0.1, 0.1),
-                 cabin_color=(0.30, 0.80, 0.90),
-                 wheel_color=(0.1, 0.1, 0.1),
-                 steering_angle=0.0):
-        self.scale = scale
+    FILENAME = "racecar"
+    def __init__(self, type=1):
+        self._generate_mesh(type)
+        
+    def _generate_mesh(self, type):
+        cabin_color=(0.3, 0.8, 0.9)
+        wheel_color=(0.1, 0.1, 0.1)
+
+        if type == 1:
+            body_color=(0.9, 0.1, 0.1)
+        elif type == 2:
+            body_color=(0.1, 0.9, 0.1)
 
         # Wheel / track geometry
-        self.wheel_radius = 0.5 * scale
-        self.wheel_width  = 0.5 * scale
-        self.track = 1.8 * scale   # distance between wheel centers (x)
+        self.wheel_radius = 0.5
+        self.wheel_width  = 0.5
+        self.track = 1.8   # distance between wheel centers (x)
 
-        self.front_axle_l = 0.50 * scale
-        self.body_mid_l   = 1.90 * scale
-        self.rear_axle_l  = 0.60 * scale
+        self.front_axle_l = 0.50
+        self.body_mid_l   = 1.90
+        self.rear_axle_l  = 0.60
         self.total_l = self.front_axle_l + self.body_mid_l + self.rear_axle_l
 
         # Widths / heights
-        self.axle_w   = self.track + 0.30 * scale   # axles a bit wider (front wing feel)
-        self.axle_h   = 0.20 * scale
-        self.body_w   = 1.00 * scale
-        self.body_h   = 0.20 * scale
-        self.cockpit_w = 0.8 * scale 
-        self.cockpit_h = 0.5 * scale
-        self.cockpit_l = 1.2 * scale
+        self.axle_w   = self.track + 0.30   # axles a bit wider (front wing feel)
+        self.axle_h   = 0.20
+        self.body_w   = 1.00
+        self.body_h   = 0.20
+        self.cockpit_w = 0.8 
+        self.cockpit_h = 0.5
+        self.cockpit_l = 1.2
 
         self.front_axle_z =  self.total_l * 0.5 - self.front_axle_l * 0.5
         self.rear_axle_z  = -self.total_l * 0.5 + self.rear_axle_l * 0.5
         self.body_mid_z = (self.front_axle_z + self.rear_axle_z) * 0.5
-        self.cockpit_z = self.body_mid_z - 0.20 * scale
+        self.cockpit_z = self.body_mid_z - 0.20
 
         # Wheel base derived from axle centers
         self.wheel_base = self.front_axle_z - self.rear_axle_z
@@ -358,9 +340,9 @@ class RaceCar:
         self.front_axle = Cube()
         self.mid_body   = Cube()
         self.rear_axle  = Cube()
-        self.cockpit    = Sphere(latitude_bands=8, longitude_bands=8)
+        self.cockpit    = Sphere(bands=10)
         self.wheel      = Wheel(radius=self.wheel_radius, width=self.wheel_width, segments=16)
-        self.steering_angle = steering_angle
+        self.steering_angle = 0.0
 
     def draw(self, shader, model_matrix, position=Point(0,0,0), yaw=0.0):
         def draw_part(obj, color, tx, ty, tz, sx=1.0, sy=1.0, sz=1.0, rotate_y=None, 
@@ -415,6 +397,7 @@ class RaceCar:
 # ----------------------------------------------------------------------------------------------------
 
 class VerticalWall:
+    FILENAME = "wall_vert"
     def __init__(self, width = 1.0, height = 1.0, color=(0.5,0.5,0.5)):
         w = width
         h = height
@@ -464,6 +447,7 @@ class VerticalWall:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class HorizontalWall:
+    FILENAME = "wall_horiz"
     def __init__(self, width = 1.0, height = 1.0, color=(0.1,0.1,0.1)):
         w = width
         h = height
@@ -513,6 +497,7 @@ class HorizontalWall:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class StadiumBorder:
+    FILENAME = "border"
     ''' Draws simple single-sided walls around the track's boundaries '''
     def __init__(self, world_width=1.0, border_height=1.0, color=(0.5,0.5,0.5)):
         self.world_width = world_width
@@ -601,6 +586,7 @@ class StadiumBorder:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.indices), GL.GL_UNSIGNED_INT, self.indices)
 
 class FloorTile:
+    FILENAME = "floor"
     def __init__(self, size = 1.0, color=(0.0,0.5,0.0)):
         self.color = color
         self.position_array = [
@@ -620,6 +606,7 @@ class FloorTile:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class FinishLine:
+    FILENAME = "finish_line"
     # Centered checkered finish line (alternating black/white)
     def __init__(self, road_width=1.0, banks=0.0, tile_size=1.0, horizontal=True, color1=(1.0,1.0,1.0), color2=(0.0,0.0,0.0)):
         w = road_width
@@ -696,6 +683,7 @@ class FinishLine:
 
 
 class HorizontalRoad:
+    FILENAME = "road_horiz"
     def __init__(self, width = 1.0, tile_size = 1.0, banks = 1.0, color=(0.2,0.2,0.2)):
         w = width
         s = tile_size
@@ -718,6 +706,7 @@ class HorizontalRoad:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class VerticalRoad:
+    FILENAME = "raod_vert"
     def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
         w = width
         s = tile_size
@@ -740,6 +729,7 @@ class VerticalRoad:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class LeftTurnRoad:
+    FILENAME = "road_left"
     def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
         w = width
         s = tile_size
@@ -767,6 +757,7 @@ class LeftTurnRoad:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class RightTurnRoad:
+    FILENAME = "road_right"
     def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
         w = width
         s = tile_size
@@ -794,6 +785,7 @@ class RightTurnRoad:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
     
 class DownLeftTurnRoad:
+    FILENAME = "road_downleft"
     def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
         w = width
         s = tile_size
@@ -821,6 +813,7 @@ class DownLeftTurnRoad:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class DownRightTurnRoad:
+    FILENAME = "road_downright"
     def __init__(self, width = 1.0, tile_size = 0.1, banks = 1.0, color=(0.2,0.2,0.2)):
         w = width
         s = tile_size
@@ -848,6 +841,7 @@ class DownRightTurnRoad:
         GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
 
 class Cylinder:
+    FILENAME = "cylinder"
     def __init__(self, length=2.0, segments=8, width=1.0):
         self.position_array = []
         self.normal_array = []
@@ -909,6 +903,7 @@ class Cylinder:
 
 
 class StadiumLights:
+    FILENAME = "stadiumlights"
     def __init__(self, scale=1.0, 
                  pole_color=(0.6, 0.6, 0.6),
                  light_color=(0.5, 0.5, 0.5)):
@@ -988,11 +983,12 @@ class StadiumLights:
 # ----------------------------------------------------------------------------------------------------
 
 class Pickup:
+    FILENAME = "pickup"
     def __init__(self, scale = 1.0, type = "speed_boost", color=(1.0, 0.84, 0.0)):
         self.scale = scale
         self.type = type
         self.color = color
-        self.body = Sphere(latitude_bands=6, longitude_bands=6)
+        self.body = Sphere(bands=6)
 
         # Animation state
         self.time = 0.0
@@ -1013,3 +1009,44 @@ class Pickup:
     def draw(self, shader):
         shader.set_solid_color(*self.color)
         self.body.draw(shader)
+
+
+# ----------------------------------------------------------------------------------------------------
+# ----------------------------------------.obj----------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+
+class ObjRaceCar:
+    def __init__(self, obj_filepath="obj/vehicle-speedster.obj", color=(0.8, 0.2, 0.2)):
+        self.color = color
+        
+        # Load and cache the OBJ file
+        mesh_data = MeshLoader.load_obj_and_cache(obj_filepath, "vehicle-speedster")
+        
+        self.position_array = mesh_data.positions
+        self.normal_array = mesh_data.normals
+        self.index_array = mesh_data.indices
+        
+        print(f"Loaded OBJ race car with {len(self.position_array)//3} vertices")
+    
+    def draw(self, shader, model_matrix, position, yaw=0.0):
+        """Draw the car at the specified position and rotation"""
+        model_matrix.load_identity()
+        model_matrix.add_translation(position.x, position.y, position.z)
+        model_matrix.add_rotation_y(yaw + pi)  # Add pi radians (180 degrees)
+        
+        # Scale the car if needed (the OBJ might be very small or large)
+        model_matrix.add_scale(4.0, 4.0, 4.0)  # Adjust scale as needed
+        
+        shader.set_model_matrix(model_matrix.matrix)
+        shader.set_solid_color(*self.color)
+        
+        # Set material properties
+        shader.set_material_properties(32.0, 0.3)  # Some specular reflection
+        
+        shader.set_position_attribute(self.position_array)
+        shader.set_normal_attribute(self.normal_array)
+        
+        if self.index_array:
+            GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
+        else:
+            GL.glDrawArrays(GL.GL_TRIANGLES, 0, len(self.position_array) // 3)

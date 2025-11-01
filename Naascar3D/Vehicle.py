@@ -2,6 +2,7 @@
 from math import *
 import OpenGL.GL as gl
 from Matrices import *
+from Base3DObjects import ObjRaceCar
 
 
 class Vehicle:
@@ -19,13 +20,12 @@ class Vehicle:
     STEER_MAX_FACTOR = 1.15        # allow a bit more authority at top speed
     STEER_RESPONSE_EXP = 2.0       # >1 makes low speeds very insensitive
 
-    def __init__(self, settings = {"position": Point(0,0,0), "direction": Vector(1,0,0), "hitbox_size": 1.0, "speed": 0, "steering": 0, "color": (1.0, 0.0, 0.0, 1.0)}):
+    def __init__(self, settings = {"position": Point(0,0,0), "direction": Vector(1,0,0), "hitbox_size": 1.0, "speed": 0}):
         self.position = settings["position"]
         self.direction = settings["direction"]
-        self.speed = settings["speed"]
-        self.steering = settings["steering"]
-        self.color = settings["color"]
         self.hitbox_size = settings["hitbox_size"]
+        self.speed = settings["speed"]
+        self.steering = 0.0
         self.acceleration = self.ACCELERATION # default acceleration -- can be modified by power-ups
         
         self.disabled = 0
@@ -33,11 +33,8 @@ class Vehicle:
         self.boosted = 0
 
         self.model_matrix = ModelMatrix()
-        self.car_body = RaceCar(
-                body_color=(0.9, 0.1, 0.1),
-                cabin_color=(0.30, 0.80, 0.90),
-                wheel_color=(0.1, 0.1, 0.1),
-                steering_angle=0.0)
+        #self.car_body = RaceCar(1)
+        self.car_body = ObjRaceCar(color=(0.8, 0.2, 0.2))  # Red player car
 
     def update(self, delta_time, steering_input):
         # Update speed and steering based on user input or AI

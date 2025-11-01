@@ -42,8 +42,8 @@ class GameManager:
             "tile_size": self.SQUARE_SIZE, 
             "road_width": self.ROAD_WIDTH, 
             "sideline_width": self.SIDELINE_WIDTH,
-            "min_length": 16,
-            "max_length": 30
+            "min_length": 6,
+            "max_length": 12
         })
         
         starting_position = self.Track.start_coordinates()
@@ -54,16 +54,14 @@ class GameManager:
             "position": starting_position, 
             "direction": Vector(start_dir_y,0,start_dir_x), 
             "hitbox_size": 2.0,
-            "speed": 0, "steering": 0, 
-            "color": (1.0, 0.0, 0.0)
+            "speed": 0
         })
         
         self.Ghost = Ghost( self.Track, settings = {
             "position": starting_position, 
             "direction" : Vector(start_dir_y,0,start_dir_x),
             "hitbox_size": 2.0,
-            "speed" : 20,
-            "color": (0.0, 1.0,)
+            "speed" : 20
         })
 
         self.Physics = Physics3D(self.Track, self.Vehicle)

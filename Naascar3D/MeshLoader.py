@@ -1,6 +1,7 @@
 import json
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
+from ObjLoader import ObjLoader
 
 class MeshData:
     def __init__(self, positions: List[float], normals: List[float], indices: List[int]):
@@ -17,7 +18,7 @@ class MeshLoader:
         if not os.path.exists(self.mesh_directory):
             os.makedirs(self.mesh_directory)
     
-    def save_mesh(self, name: str, positions: List[float], normals: List[float], indices: List[int]):
+    def save_mesh(self, name: str, positions: List[float], normals: List[float], indices: Optional[List[int]] = None):
         """Save mesh data to a JSON file"""
         mesh_data = {
             "positions": positions,
@@ -44,8 +45,19 @@ class MeshLoader:
         return MeshData(
             positions=data["positions"],
             normals=data["normals"], 
-            indices=data["indices"]
+            indices=data.get("indices")
         )
+    
+    def load_obj_and_cache(self, obj_filepath: str, cache_name: str) -> MeshData:
+        """Load OBJ file and cache it as JSON for faster future loading"""
+        if self.mesh_exists(cache_name):
+            return self.load_mesh(cache_name)
+        
+        # Load from OBJ and cache
+        positions, normals, indices = ObjLoader.load_obj(obj_filepath)
+        self.save_mesh(cache_name, positions, normals, indices)
+        
+        return MeshData(positions, normals, indices)
     
     def mesh_exists(self, name: str) -> bool:
         """Check if a mesh file exists"""
