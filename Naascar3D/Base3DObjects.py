@@ -81,6 +81,12 @@ class Vector:
     def __neg__(self):
         return Vector(-self.x, -self.y, -self.z)
     
+    def __mul__(self, x):
+        return Vector(self.x * x, self.y * x, self.z * x)
+    
+    def __rmul__(self, x):
+        return Vector(self.x * x, self.y * x, self.z * x)
+    
     def copy(self):
         return Vector(self.x, self.y, self.z)
     
@@ -327,7 +333,7 @@ class RaceCar:
         self.axle_h   = 0.20 * scale
         self.body_w   = 1.00 * scale
         self.body_h   = 0.20 * scale
-        self.cockpit_w = 0.8 * scale
+        self.cockpit_w = 0.8 * scale 
         self.cockpit_h = 0.5 * scale
         self.cockpit_l = 1.2 * scale
 

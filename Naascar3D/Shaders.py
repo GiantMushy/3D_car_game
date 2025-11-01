@@ -56,10 +56,7 @@ class Shader3D:
             self.lightPositionsLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_positions")
             self.lightColorsLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_colors")
             self.lightIntensitiesLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_intensities")
-
-            self.lightPositionsLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_positions")
-            self.lightColorsLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_colors")
-            self.lightIntensitiesLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_intensities")
+            self.lightEnabledLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_light_enabled")
             
             # Material uniforms
             self.cameraPositionLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_camera_position")
@@ -71,7 +68,6 @@ class Shader3D:
             self.directionalLightColorLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_directional_light_color")
             self.directionalLightIntensityLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_directional_light_intensity")
             self.directionalLightEnabledLoc = GL.glGetUniformLocation(self.renderingProgramID, "u_directional_light_enabled")
-
 
 
     def use(self):
@@ -107,23 +103,42 @@ class Shader3D:
             GL.glUniform1f(self.shininessLoc, shininess)
             GL.glUniform1f(self.specularStrengthLoc, specular_strength)
 
-    def set_stadium_lights(self, light_positions, light_colors, light_intensities):
-        """Set the 4 stadium light parameters"""
+    def set_all_lights(self, stadium_positions, stadium_colors, stadium_intensities, 
+                       underglow_pos=None, underglow_color=(0.2, 0.6, 1.0), underglow_intensity=0.0):
+        """Set all 5 lights (4 stadium + 1 underglow)"""
         if not self.use_stadium_lights:
             return
             
-        # Flatten position arrays for OpenGL
+        # Prepare arrays for all 5 lights
         pos_array = []
-        for pos in light_positions:
-            pos_array.extend([pos.x, pos.y, pos.z])
-            
         color_array = []
-        for color in light_colors:
-            color_array.extend([color[0], color[1], color[2]])
+        intensity_array = []
+        enabled_array = []
         
-        GL.glUniform3fv(self.lightPositionsLoc, 4, pos_array)
-        GL.glUniform3fv(self.lightColorsLoc, 4, color_array) 
-        GL.glUniform1fv(self.lightIntensitiesLoc, 4, light_intensities)
+        # Add stadium lights (indices 0-3)
+        for i in range(4):
+            pos_array.extend([stadium_positions[i].x, stadium_positions[i].y, stadium_positions[i].z])
+            color_array.extend([stadium_colors[i][0], stadium_colors[i][1], stadium_colors[i][2]])
+            intensity_array.append(stadium_intensities[i])
+            enabled_array.append(1)
+        
+        # Add underglow light (index 4)
+        if underglow_pos:
+            pos_array.extend([underglow_pos.x, underglow_pos.y, underglow_pos.z])
+            color_array.extend([underglow_color[0], underglow_color[1], underglow_color[2]])
+            intensity_array.append(underglow_intensity)
+            enabled_array.append(1)
+        else:
+            pos_array.extend([0.0, 0.0, 0.0])
+            color_array.extend([0.0, 0.0, 0.0])
+            intensity_array.append(0.0)
+            enabled_array.append(0)
+        
+        # Set all uniforms at once
+        GL.glUniform3fv(self.lightPositionsLoc, 5, pos_array)
+        GL.glUniform3fv(self.lightColorsLoc, 5, color_array)
+        GL.glUniform1fv(self.lightIntensitiesLoc, 5, intensity_array)
+        GL.glUniform1iv(self.lightEnabledLoc, 5, enabled_array)
         
     def set_directional_light(self, direction, color, intensity, enabled=True):
         """Set directional light (like sun/moon)"""

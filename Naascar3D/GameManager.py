@@ -42,8 +42,8 @@ class GameManager:
             "tile_size": self.SQUARE_SIZE, 
             "road_width": self.ROAD_WIDTH, 
             "sideline_width": self.SIDELINE_WIDTH,
-            "min_length": 6,
-            "max_length": 10
+            "min_length": 16,
+            "max_length": 30
         })
         
         starting_position = self.Track.start_coordinates()
@@ -62,7 +62,7 @@ class GameManager:
             "position": starting_position, 
             "direction" : Vector(start_dir_y,0,start_dir_x),
             "hitbox_size": 2.0,
-            "speed" : 5,
+            "speed" : 20,
             "color": (0.0, 1.0,)
         })
 
@@ -118,7 +118,10 @@ class GameManager:
         self.Shader.use()
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
         self.Shader.set_camera_position(self.Camera.eye)
-        self.Track.set_stadium_lighting()
+
+        # Set underglow position and pass to track lighting
+        underglow_pos = Point(self.Vehicle.position.x, 0.2, self.Vehicle.position.z)
+        self.Track.set_stadium_lighting(underglow_pos, 20.0)  # Very high intensity for testing
 
         # 3D scene
         self.Track.draw()

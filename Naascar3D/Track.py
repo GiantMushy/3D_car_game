@@ -90,8 +90,8 @@ class Track:
             cell = cell.next
             pos = Coordinate(cell.x, cell.y)
             cell.real_center = self.grid_pos_to_coords(pos)
-            cell.real_enter = self.grid_pos_to_coords(pos - prev.direction)
-            cell.real_exit = self.grid_pos_to_coords(pos + cell.direction)
+            cell.real_enter = self.grid_pos_to_coords(pos - prev.direction*0.5)
+            cell.real_exit = self.grid_pos_to_coords(pos + cell.direction*0.5)
 
             prev = cell
 
@@ -203,37 +203,37 @@ class Track:
         rotation_radians = math.radians(rotation)
         self.stadium_lights.draw(self.shader, self.model_matrix, position, rotation_radians)
 
-    def set_stadium_lighting(self):
-        """Configure the 4 stadium lights"""
+    def set_stadium_lighting(self, underglow_pos=None, underglow_intensity=0.0):
+        """Configure all lighting including optional underglow"""
         grid_size = self.grid_size
         tile_size = self.tile_size
-        light_height = 80.0  # Height of light fixtures (8.0 * scale=10.0 from StadiumLights)
+        light_height = 80.0
         
-        # Light positions
         light_positions = [
-            Point(0, light_height, 0),                                    # Corner 1
-            Point(0, light_height, grid_size * tile_size),               # Corner 2  
-            Point(grid_size * tile_size, light_height, 0),               # Corner 3
-            Point(grid_size * tile_size, light_height, grid_size * tile_size)  # Corner 4
+            Point(0, light_height, 0),
+            Point(0, light_height, grid_size * tile_size),
+            Point(grid_size * tile_size, light_height, 0),
+            Point(grid_size * tile_size, light_height, grid_size * tile_size)
         ]
         
-        # Light colors
         light_colors = [
-            (1.0, 0.95, 0.8),  # Warm white
+            (1.0, 0.95, 0.8),
             (1.0, 0.95, 0.8),
             (1.0, 0.95, 0.8), 
             (1.0, 0.95, 0.8)
         ]
         light_intensity = 15.0
 
-        self.shader.set_stadium_lights(light_positions, light_colors, [light_intensity]*4)
+        # Set all lights including underglow
+        self.shader.set_all_lights(
+            light_positions, light_colors, [light_intensity]*4,
+            underglow_pos, (0.2, 0.6, 1.0), underglow_intensity
+        )
         
-        moon_direction = Vector(0.3, -0.8, 0.2)  # Coming from upper-right
+        # Set directional light
+        moon_direction = Vector(0.3, -0.8, 0.2)
         moon_direction.normalize()
-        moon_color = (0.2, 0.2, 0.3)  # Cool blue moonlight
-        moon_intensity = 0.1  # Subtle ambient illumination
-
-        self.shader.set_directional_light(moon_direction, moon_color, moon_intensity)
+        self.shader.set_directional_light(moon_direction, (0.2, 0.2, 0.3), 0.1)
 
     def set_model_matrix_and_shader(self, grid_x, grid_y, height=0.0, centered=True):
         self.model_matrix.load_identity()

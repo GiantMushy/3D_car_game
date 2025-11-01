@@ -33,7 +33,11 @@ class Vehicle:
         self.boosted = 0
 
         self.model_matrix = ModelMatrix()
-        self.car_body = RaceCar()
+        self.car_body = RaceCar(
+                body_color=(0.9, 0.1, 0.1),
+                cabin_color=(0.30, 0.80, 0.90),
+                wheel_color=(0.1, 0.1, 0.1),
+                steering_angle=0.0)
 
     def update(self, delta_time, steering_input):
         # Update speed and steering based on user input or AI

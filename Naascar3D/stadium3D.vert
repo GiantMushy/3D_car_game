@@ -5,23 +5,10 @@ uniform mat4 u_model_matrix;
 uniform mat4 u_projection_view_matrix;
 uniform vec4 u_color;
 
-// Point light uniforms (4 stadium lights)
-uniform vec3 u_light_positions[4];
-uniform vec3 u_light_colors[4];
-uniform float u_light_intensities[4];
-
-// Material properties
-uniform vec3 u_camera_position;
-uniform float u_shininess;      
-uniform float u_specular_strength;
-
-// Directional Light uniforms (moonlight)
-uniform vec3 u_directional_light_direction;
-uniform vec3 u_directional_light_color;
-uniform float u_directional_light_intensity;
-uniform bool u_directional_light_enabled;
-
-varying vec4 v_color;
+// Pass to fragment shader
+varying vec3 v_world_pos;
+varying vec3 v_world_normal;
+varying vec4 v_base_color;
 
 void main(void)
 {
@@ -32,60 +19,12 @@ void main(void)
     position = u_model_matrix * position;
     normal = u_model_matrix * normal;
     
-    vec3 world_pos = position.xyz;
-    vec3 world_normal = normalize(normal.xyz);
-    
-    vec3 total_lighting = vec3(0.0, 0.0, 0.0);
-    
-    // ---- 1. DIRECTIONAL LIGHT (moonlight)
-    if(u_directional_light_enabled) {
-        vec3 light_dir = normalize(-u_directional_light_direction);  // Reverse direction
-        float diffuse = max(dot(world_normal, light_dir), 0.0);
-        
-        // Specular for directional light
-        float specular = 0.0;
-        if(u_specular_strength > 0.0) {
-            vec3 view_dir = normalize(u_camera_position - world_pos);
-            vec3 reflect_dir = reflect(-light_dir, world_normal);
-            specular = pow(max(dot(view_dir, reflect_dir), 0.0), u_shininess) * u_specular_strength;
-        }
-        
-        total_lighting += u_directional_light_color * (diffuse + specular) * u_directional_light_intensity;
-    }
-    
-    // ---- 2. POSITIONAL LIGHTS (4 stadium lights)
-    for(int i = 0; i < 4; i++) {
-        vec3 light_dir = u_light_positions[i] - world_pos;
-        float distance = length(light_dir);
-        light_dir = normalize(light_dir);
-        
-        // Attenuation (inverse square law with minimum)
-        float attenuation = u_light_intensities[i] / (1.0 + 0.001 * distance * distance);
-        attenuation = max(attenuation, 0.0);
-        
-        // Lambertian diffuse lighting
-        float diffuse = max(dot(world_normal, light_dir), 0.0);
-        
-        // Specular reflection (only if material is specular)
-        float specular = 0.0;
-        if(u_specular_strength > 0.0) {
-            vec3 view_dir = normalize(u_camera_position - world_pos);
-            vec3 reflect_dir = reflect(-light_dir, world_normal);
-            specular = pow(max(dot(view_dir, reflect_dir), 0.0), u_shininess) * u_specular_strength;
-        }
-        
-        total_lighting += u_light_colors[i] * (diffuse + specular) * attenuation;
-    }
-    
-    // Small ambient light so things aren't completely black
-    vec3 ambient = vec3(0.01, 0.01, 0.015);
-    total_lighting += ambient;
-    
-    // Clamp to prevent over-bright colors
-    total_lighting = min(total_lighting, vec3(1.0, 1.0, 1.0));
-    
-    v_color = vec4(total_lighting * u_color.rgb, u_color.a);
+    // Pass world space data to fragment shader
+    v_world_pos = position.xyz;
+    v_world_normal = normalize(normal.xyz);  // Use the transformed normal
+    v_base_color = u_color;
 
+    // Transform to clip space
     position = u_projection_view_matrix * position;
     gl_Position = position;
 }
