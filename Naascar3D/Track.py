@@ -173,9 +173,9 @@ class Track:
     def draw_hwall(self, grid_x, grid_y, shift = 0):
         self.model_matrix.load_identity()
 
-        self.model_matrix.add_translation( grid_y * self.tile_size + self.tile_size * shift, # x position
-                                           0.0, 
-                                           grid_x * self.tile_size ) # z position
+        self.model_matrix.add_translation( grid_y * self.tile_size + self.tile_size * shift,
+                                        0.0, 
+                                        grid_x * self.tile_size )
 
         self.shader.set_model_matrix(self.model_matrix.matrix)
         self.h_wall.draw(self.shader)
@@ -183,9 +183,9 @@ class Track:
     def draw_vwall(self, grid_x, grid_y, shift = 0):
         self.model_matrix.load_identity()
 
-        self.model_matrix.add_translation( grid_y * self.tile_size, # x position
-                                           0.0, 
-                                           grid_x * self.tile_size + self.tile_size * shift ) # z position
+        self.model_matrix.add_translation( grid_y * self.tile_size,
+                                        0.0, 
+                                        grid_x * self.tile_size + self.tile_size * shift )
 
         self.shader.set_model_matrix(self.model_matrix.matrix)
         self.v_wall.draw(self.shader)

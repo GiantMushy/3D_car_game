@@ -12,18 +12,13 @@ class LapCounter:
         self.half_tile = track.half_tile
         tile_size = track.tile_size
 
-        self.start_direction = self.track.Grid.start.direction
-        self.start_direction = Point(self.start_direction.x, 0, self.start_direction.y)
+        direction = self.track.Grid.start.direction
+        self.start_direction = Point(direction.y, 0, direction.x)
         self.total_laps = total_laps
         self.horizontal = (self.track.Grid.start.type == "h1")
-        self.starting_pos = Point(self.track.Grid.start.y * tile_size + self.half_tile, 0.0, self.track.Grid.start.x * tile_size + self.half_tile)
-
-        self.finish_line_pos = self.starting_pos
-        self.checkpoint_1_pos = self.starting_pos.copy()
-        self.checkpoint_2_pos = self.starting_pos.copy()
-
-        self.checkpoint_1_pos += self.start_direction * self.half_tile
-        self.checkpoint_2_pos -= self.start_direction * self.half_tile
+        self.finish_line_pos = self.track.Grid.start.real_center
+        self.checkpoint_1_pos = self.track.Grid.start.real_exit
+        self.checkpoint_2_pos = self.track.Grid.start.real_enter
 
         self.finish_line =  { "pos": self.finish_line_pos }
         self.checkpoint_1 = { "pos": self.checkpoint_1_pos, "passed": False }
@@ -32,6 +27,9 @@ class LapCounter:
         self.lap_counter = 0
 
     def update(self):
+        if self.lap_counter == 3:
+            return
+        
         if self.is_in_zone(self.finish_line["pos"]):
             self.trigger_finish_line()
         elif self.is_in_zone(self.checkpoint_1["pos"]):

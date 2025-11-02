@@ -27,7 +27,6 @@ class ObjLoader:
                     continue
                 
                 if parts[0] == 'v':  # Vertex position
-                    # Skip the color values if present (the 1 1 1 at the end)
                     x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
                     vertices.append((x, y, z))
                 
@@ -57,7 +56,6 @@ class ObjLoader:
         # Convert to flat arrays for OpenGL
         vertex_index = 0
         for face_verts, face_norms in faces:
-            # Triangulate faces (assuming they're already triangles or quads)
             if len(face_verts) == 3:  # Triangle
                 triangles = [(0, 1, 2)]
             elif len(face_verts) == 4:  # Quad - split into two triangles

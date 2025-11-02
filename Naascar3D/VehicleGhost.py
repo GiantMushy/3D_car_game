@@ -1,3 +1,4 @@
+from math import hypot
 from Vehicle import *
 from Matrices import *
 from Base3DObjects import RaceCar
@@ -10,7 +11,8 @@ class Ghost:
         
         self.Track = track
         self.ModelMatrix = ModelMatrix()
-        self.Body = RaceCar(2)
+        #self.Body = RaceCar(2)
+        self.Body = ObjRaceCar(obj_filepath="obj/vehicle-speedster.obj", color=(0.2, 0.8, 0.2))  # Red player car
 
         self.current_cell = self.Track.Grid.start
         self.t = 0.0
@@ -60,7 +62,7 @@ class Ghost:
         self.direction.z = d.z
 
         # normalize direction vector (avoid zero-length)
-        mag = math.hypot(self.direction.x, self.direction.z)
+        mag = hypot(self.direction.x, self.direction.z)
         if mag > 1e-6:
             self.direction.x /= mag
             self.direction.z /= mag

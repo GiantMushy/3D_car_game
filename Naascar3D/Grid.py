@@ -190,7 +190,6 @@ class Grid:
                             self.length += 1
                             print(self)
                             return True
-                    return False
                 
                 elif self.bounds_check(next_pos) and self.is_cell_empty(next_pos): # check if the propsed direction is valid
                     if self.dfs(cell.next, cell.direction, length + 1):
@@ -219,7 +218,6 @@ class Grid:
                 cell.powerup = "d"
 
     def __str__(self):
-        #os.system('cls' if os.name == 'nt' else 'clear')
         output = []
         for y in range(self.size):
             output.append([])

@@ -1,6 +1,7 @@
 
 from OpenGL import GL
 from math import *
+import traceback
 
 import pygame
 from pygame.locals import *
@@ -108,9 +109,9 @@ class GameManager:
             pass
 
     def display(self):
-        GL.glEnable(GL.GL_DEPTH_TEST)  ### --- NEED THIS FOR NORMAL 3D BUT MANY EFFECTS BETTER WITH glDisable(GL_DEPTH_TEST) ... try it! --- ###
-        GL.glClearColor(0.05, 0.1, 0.2, 1.0) # blue background
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
+        GL.glEnable(GL.GL_DEPTH_TEST)
+        GL.glClearColor(0.05, 0.1, 0.2, 1.0) # background
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
         GL.glViewport(*self.view_settings["viewport"])
 
         self.Shader.use()
@@ -201,4 +202,13 @@ class GameManager:
         self.program_loop()
 
 if __name__ == "__main__":
-    GameManager().start()
+    try:
+        view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}
+        game_settings = {"track_number": 0}
+        game = GameManager(view_settings=view_settings, game_settings=game_settings)
+        game.start()
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        print("Full traceback:")
+        traceback.print_exc()
+        input("Press Enter to exit...")  # Keep console open to see error

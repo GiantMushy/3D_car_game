@@ -33,8 +33,8 @@ class Vehicle:
         self.boosted = 0
 
         self.model_matrix = ModelMatrix()
-        #self.car_body = RaceCar(1)
-        self.car_body = ObjRaceCar(color=(0.8, 0.2, 0.2))  # Red player car
+        self.car_body = RaceCar(1)
+        #self.car_body = ObjRaceCar(obj_filepath="obj/vehicle-speedster.obj", color=(0.8, 0.2, 0.2))  # Red player car
 
     def update(self, delta_time, steering_input):
         # Update speed and steering based on user input or AI
