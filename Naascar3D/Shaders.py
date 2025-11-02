@@ -5,7 +5,7 @@ from Base3DObjects import *
 
 class Shader3D:
     def __init__(self, use_stadium_lights=False):
-        # Choose shader files based on lighting mode
+        # Choose shader files based on lighting mode (3D vs UI)
         if use_stadium_lights:
             vert_file = "/stadium3D.vert"
             frag_file = "/stadium3D.frag"

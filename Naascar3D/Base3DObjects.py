@@ -36,6 +36,9 @@ class Coordinate:
 
     def __repr__(self):
         return f"Coordinate({self.x}, {self.y})"
+    
+    def copy(self):
+        return Coordinate(self.x, self.y)
 
 
 class Point:
@@ -1034,8 +1037,7 @@ class ObjRaceCar:
         model_matrix.add_translation(position.x, position.y, position.z)
         model_matrix.add_rotation_y(yaw + pi)  # Add pi radians (180 degrees)
         
-        # Scale the car if needed (the OBJ might be very small or large)
-        model_matrix.add_scale(4.0, 4.0, 4.0)  # Adjust scale as needed
+        model_matrix.add_scale(4.0, 4.0, 4.0)  # Adjust scale
         
         shader.set_model_matrix(model_matrix.matrix)
         shader.set_solid_color(*self.color)
@@ -1050,84 +1052,3 @@ class ObjRaceCar:
             GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
         else:
             GL.glDrawArrays(GL.GL_TRIANGLES, 0, len(self.position_array) // 3)
-
-# ...existing code...
-
-class Billboard:
-    def __init__(self, width=4.0, height=2.0, texture_path="rolex_banner.jpg"):
-        self.width = width
-        self.height = height
-        self.texture_path = texture_path
-        
-        # Create a simple quad
-        w2 = width * 0.5
-        h2 = height * 0.5
-        
-        self.position_array = [
-            -w2, -h2, 0.0,  # Bottom left
-             w2, -h2, 0.0,  # Bottom right
-             w2,  h2, 0.0,  # Top right
-            -w2,  h2, 0.0   # Top left
-        ]
-        
-        self.normal_array = [
-            0.0, 0.0, 1.0,  # All normals facing forward
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 1.0
-        ]
-        
-        self.texcoord_array = [
-            0.0, 0.0,  # Bottom left
-            1.0, 0.0,  # Bottom right  
-            1.0, 1.0,  # Top right
-            0.0, 1.0   # Top left
-        ]
-        
-        self.index_array = [0, 1, 2, 2, 3, 0]
-    
-    def draw(self, shader, texture_id):
-        shader.set_use_texture(True)
-        shader.bind_texture(texture_id)
-        
-        shader.set_position_attribute(self.position_array)
-        shader.set_normal_attribute(self.normal_array)
-        shader.set_texcoord_attribute(self.texcoord_array)
-        
-        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)
-        
-        shader.set_use_texture(False)
-
-class SimpleBillboard:
-    """A simple colored billboard that doesn't require textures"""
-    def __init__(self, width=4.0, height=2.0, color=(1.0, 0.0, 0.0)):
-        self.width = width
-        self.height = height
-        self.color = color
-        
-        # Create a simple quad
-        w2 = width * 0.5
-        h2 = height * 0.5
-        
-        self.position_array = [
-            -w2, -h2, 0.0,  # Bottom left
-             w2, -h2, 0.0,  # Bottom right
-             w2,  h2, 0.0,  # Top right
-            -w2,  h2, 0.0   # Top left
-        ]
-        
-        self.normal_array = [
-            0.0, 0.0, 1.0,  # All normals facing forward
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 1.0
-        ]
-        
-        self.index_array = [0, 1, 2, 2, 3, 0]
-    
-    def draw(self, shader):
-        shader.set_solid_color(*self.color)
-        shader.set_position_attribute(self.position_array)
-        shader.set_normal_attribute(self.normal_array)
-        
-        GL.glDrawElements(GL.GL_TRIANGLES, len(self.index_array), GL.GL_UNSIGNED_INT, self.index_array)

@@ -18,9 +18,11 @@ from VehicleGhost import *
 from Track import *
 
 class GameManager:
+    ASPECT_X = 800
+    ASPECT_Y = 600
     CAMERA_DISTANCE = 16.0
     CAMERA_HEIGHT = 5
-    TRACK_NUMBER = 0 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3
+    TRACK_NUMBER = 1 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3 - 0 is auto generated, rest are pre-designed
     GRID_SIZE = 8
     SQUARE_SIZE = 32.0
     ROAD_WIDTH = 16.0
@@ -28,7 +30,7 @@ class GameManager:
     MINIMUM_TRACK_LENGTH = 16
     MAXIMUM_TRACK_LENGTH = 24 #Could take a while to load lmao
 
-    def __init__(self, view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}, game_settings = {"track_number": TRACK_NUMBER}):
+    def __init__(self, view_settings = {"aspect_x": ASPECT_X, "aspect_y": ASPECT_Y, "viewport": (0,0,ASPECT_X,ASPECT_Y)}, game_settings = {"track_number": TRACK_NUMBER, "min_len": MINIMUM_TRACK_LENGTH, "max_len":MAXIMUM_TRACK_LENGTH}):
         self.view_settings = view_settings
 
         pygame.init() 
@@ -43,8 +45,8 @@ class GameManager:
             "tile_size": self.SQUARE_SIZE, 
             "road_width": self.ROAD_WIDTH, 
             "sideline_width": self.SIDELINE_WIDTH,
-            "min_length": 6,
-            "max_length": 12
+            "min_length": game_settings["min_len"],
+            "max_length": game_settings["max_len"]
         })
         
         starting_position = self.Track.start_coordinates()
@@ -69,7 +71,6 @@ class GameManager:
         self.Pickups = Pickups(self.Track, self.Vehicle)
         self.LapCounter = LapCounter(self.Track, self.Vehicle, total_laps=3)
 
-        
         # 3D Camera
         self.projection_matrix = ProjectionMatrix()
         self.projection_matrix.set_perspective(radians(60.0), view_settings["aspect_x"]/view_settings["aspect_y"], 0.1, 1000.0)
@@ -91,8 +92,6 @@ class GameManager:
         self.ARROW_LEFT_down = False
         self.ARROW_RIGHT_down = False
 
-        self.frame_count = 0
-
     def update(self):
         delta_time = self.clock.tick() / 1000.0
         self.Vehicle.update(delta_time, (self.LEFT_key_down, self.RIGHT_key_down, self.UP_key_down, self.DOWN_key_down))
@@ -101,12 +100,6 @@ class GameManager:
         self.Physics.enforce_track_bounds()
         self.Pickups.update(delta_time)
         self.LapCounter.update()
-    
-        self.frame_count += 1
-        self.frame_count = self.frame_count % 200
-        if self.frame_count == 0:
-            #self.debug_positional_prints()
-            pass
 
     def display(self):
         GL.glEnable(GL.GL_DEPTH_TEST)
@@ -118,9 +111,8 @@ class GameManager:
         self.Camera.update_pos(self.Vehicle.position, self.Vehicle.direction, self.Vehicle.speed)
         self.Shader.set_camera_position(self.Camera.eye)
 
-        # Set underglow position and pass to track lighting
         underglow_pos = Point(self.Vehicle.position.x, 0.2, self.Vehicle.position.z)
-        self.Track.set_stadium_lighting(underglow_pos, 20.0)  # Very high intensity for testing
+        self.Track.set_stadium_lighting(underglow_pos, 20.0)  # Very high intensity but short range
 
         # 3D scene
         self.Track.draw()
@@ -202,13 +194,5 @@ class GameManager:
         self.program_loop()
 
 if __name__ == "__main__":
-    try:
-        view_settings = {"aspect_x": 800, "aspect_y": 600, "viewport": (0,0,800,600)}
-        game_settings = {"track_number": 0}
-        game = GameManager(view_settings=view_settings, game_settings=game_settings)
-        game.start()
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        print("Full traceback:")
-        traceback.print_exc()
-        input("Press Enter to exit...")  # Keep console open to see error
+    game = GameManager()
+    game.start()

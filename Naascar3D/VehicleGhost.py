@@ -12,7 +12,7 @@ class Ghost:
         self.Track = track
         self.ModelMatrix = ModelMatrix()
         #self.Body = RaceCar(2)
-        self.Body = ObjRaceCar(obj_filepath="obj/vehicle-speedster.obj", color=(0.2, 0.8, 0.2))  # Red player car
+        self.Body = ObjRaceCar(obj_filepath="obj/vehicle-speedster.obj", color=(0.8, 0.8, 0.8))  # very cool car
 
         self.current_cell = self.Track.Grid.start
         self.t = 0.0
@@ -67,7 +67,7 @@ class Ghost:
             self.direction.x /= mag
             self.direction.z /= mag
 
-        self.turn_tires(cross_y)
+        #self.turn_tires(cross_y) not usable in the comlicated downloaded .obj mesh
 
     def turn_tires(self, cross_y):
     

@@ -203,9 +203,36 @@ class Grid:
                 cell.next = None
 
         return False
+        
+    def load_preset(self, data):
+        print("Loading preset")
+        layout = data["layout"]
+        prev_direction = data["direction"]
+        pos = data["start"]
+
+        self.start = self.get_cell(pos)
+        cell = self.start
+        for type in layout:
+            cell.type = type[:2]
+            cell.direction = self.get_next_direction(cell.type, prev_direction)
+            pos += cell.direction
+            cell.next = self.get_cell(pos)
+            if len(type) == 3:
+                cell.powerup = type[2]
+
+            prev_direction = cell.direction.copy()
+            cell = cell.next
+            self.length += 1
+            print(self)
     
-    def load_preset(data):
-        pass
+    def get_next_direction(self, type, prev_direction):
+        if type == "h0" or type == "v0" or type == "h1" or type == "v1" :
+            return prev_direction
+        elif type == "d0" or type == "d2":
+            return Coordinate(prev_direction.y, prev_direction.x)
+        elif type == "d1" or type == "d3":
+            return Coordinate(-prev_direction.y, -prev_direction.x)
+            
 
     def assign_random_powerup(self, cell):
         if cell.type in ["v0", "h0"]:

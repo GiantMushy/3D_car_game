@@ -252,20 +252,20 @@ class Track:
     def load_track(self, track_number):
         if track_number == 0:
             self.Grid.generate_random_track()
-
+        
         if track_number == 1:
-            self.Grid.load_preset({"start" : Coordinate(2,3), "direction" : Coordinate(1,0), "layout": [
+            self.Grid.load_preset({"start" : Coordinate(2,3), "direction" : Coordinate(0,1), "layout": [
                 "v1", "v0b", "d1", "d3", "v0", "d0", "h0d", "h0", "d1", "d3", "d2", "d0", "h0", 
                 "d1", "v0b", "v0", "v0", "v0", "v0", "v0s", "d2", "d3", "v0", "v0", "v0", "d1",
                 "d3", "d1", "d0", "v0", "v0", "d3", "d1", "d2", "h0", "h0", "h0", "d3", "d0", "d2"]})
         
         elif track_number == 2:
-            self.Grid.load_preset({"start" : Coordinate(1,0), "direction" : Coordinate(0, -1), "layout": [
+            self.Grid.load_preset({"start" : Coordinate(1,0), "direction" : Coordinate(1, 0), "layout": [
                 "h1", "h0", "h0", "h0", "h0", "h0", "d2", "v0", "v0", "v0", "v0", "v0", "v0", "d1", 
-                "h0", "h0", "h0", "h0", "h0", "j0", "d0", "v0", "v0", "v0", "v0", "v0", "v0", "d3"]})
+                "h0", "h0", "h0", "h0", "h0", "h0", "d0", "v0", "v0", "v0", "v0", "v0", "v0", "d3"]})
         
         elif track_number == 3:
-            self.Grid.load_preset({"start" : Coordinate(0,1), "direction" : Coordinate(1,0), "layout" : [
+            self.Grid.load_preset({"start" : Coordinate(0,1), "direction" : Coordinate(0,1), "layout" : [
                 "v1", "d3", "h0", "d2", "v0", "d1", "h0", "d0"]})
         
         self.set_cells_real_coords()
