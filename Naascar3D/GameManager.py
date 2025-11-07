@@ -22,7 +22,7 @@ class GameManager:
     ASPECT_Y = 600
     CAMERA_DISTANCE = 16.0
     CAMERA_HEIGHT = 5
-    TRACK_NUMBER = 1 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3 - 0 is auto generated, rest are pre-designed
+    TRACK_NUMBER = 0 # CAN CHANGE THIS TO TEST OTHER TRACKS: 0, 1, 2, 3 - 0 is auto generated, rest are pre-designed
     GRID_SIZE = 8
     SQUARE_SIZE = 32.0
     ROAD_WIDTH = 16.0

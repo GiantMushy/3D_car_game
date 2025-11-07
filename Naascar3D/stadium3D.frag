@@ -1,4 +1,4 @@
-precision mediump float;
+//precision mediump float;
 
 // Point light uniforms (4 stadium lights + Underglow)
 uniform vec3 u_light_positions[5];
